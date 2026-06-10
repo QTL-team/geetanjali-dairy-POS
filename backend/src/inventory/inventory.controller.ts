@@ -8,12 +8,13 @@ import {
 
 import { InventoryService } from './inventory.service';
 import { AddStockDto } from './dto/add-stock.dto';
-
+import { ReserveStockDto } from './dto/reserve-stock.dto';
+import { ReturnStockDto } from './dto/return-stock.dto';
 @Controller('inventory')
 export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
-  ) {}
+  ) { }
 
   @Post('add-stock/:productId')
   addStock(
@@ -32,5 +33,29 @@ export class InventoryController {
     @Param('productId') productId: string,
   ) {
     return this.inventoryService.getHistory(productId);
+  }
+
+  @Post('reserve-stock/:productId')
+  reserveStock(
+    @Param('productId') productId: string,
+    @Body() dto: ReserveStockDto,
+  ) {
+    return this.inventoryService.reserveStock(
+      productId,
+      dto.quantity,
+      dto.remarks,
+    );
+  }
+
+  @Post('return-stock/:productId')
+  returnStock(
+    @Param('productId') productId: string,
+    @Body() dto: ReturnStockDto,
+  ) {
+    return this.inventoryService.returnStock(
+      productId,
+      dto.quantity,
+      dto.remarks,
+    );
   }
 }
