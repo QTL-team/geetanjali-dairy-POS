@@ -14,3 +14,74 @@ model User {
   password  String
   createdAt DateTime @default(now())
 }
+
+model Customer {
+  id String @id @default(uuid())
+
+  name String
+
+  phone String
+
+  address String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+}
+
+enum UnitType {
+  KG
+  LITER
+  PIECE
+}
+
+model Product {
+  id String @id @default(uuid())
+
+  name String
+
+  description String?
+
+  unit UnitType
+
+  sellingPrice Float
+
+  availableStock Float @default(0)
+
+  reservedStock Float @default(0)
+
+  returnedStock Float @default(0)
+
+  lowStockThreshold Float @default(10)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  inventoryTransactions InventoryTransaction[]
+}
+
+enum InventoryTransactionType {
+  ADD
+  RESERVE
+  RETURN
+  ADJUSTMENT
+}
+
+model InventoryTransaction {
+  id String @id @default(uuid())
+
+  productId String
+
+  quantity Float
+
+  type InventoryTransactionType
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+}
