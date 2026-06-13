@@ -3,13 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-  async addStock(
-    productId: string,
-    quantity: number,
-    remarks?: string,
-  ) {
+  async addStock(productId: string, quantity: number, remarks?: string) {
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.update({
         where: {
@@ -46,11 +42,7 @@ export class InventoryService {
     });
   }
 
-  async reserveStock(
-    productId: string,
-    quantity: number,
-    remarks?: string,
-  ) {
+  async reserveStock(productId: string, quantity: number, remarks?: string) {
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
         where: {
@@ -93,11 +85,7 @@ export class InventoryService {
     });
   }
 
-  async returnStock(
-    productId: string,
-    quantity: number,
-    remarks?: string,
-  ) {
+  async returnStock(productId: string, quantity: number, remarks?: string) {
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
         where: { id: productId },
@@ -134,5 +122,4 @@ export class InventoryService {
       return updatedProduct;
     });
   }
-
 }

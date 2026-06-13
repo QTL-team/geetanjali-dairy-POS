@@ -1,37 +1,23 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 
 import { InventoryService } from './inventory.service';
 import { AddStockDto } from './dto/add-stock.dto';
 import { ReserveStockDto } from './dto/reserve-stock.dto';
 import { ReturnStockDto } from './dto/return-stock.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+
 @Controller('inventory')
+@UseGuards(JwtAuthGuard)
 export class InventoryController {
-  constructor(
-    private readonly inventoryService: InventoryService,
-  ) { }
+  constructor(private readonly inventoryService: InventoryService) {}
 
   @Post('add-stock/:productId')
-  addStock(
-    @Param('productId') productId: string,
-    @Body() dto: AddStockDto,
-  ) {
-    return this.inventoryService.addStock(
-      productId,
-      dto.quantity,
-      dto.remarks,
-    );
+  addStock(@Param('productId') productId: string, @Body() dto: AddStockDto) {
+    return this.inventoryService.addStock(productId, dto.quantity, dto.remarks);
   }
 
   @Get('history/:productId')
-  getHistory(
-    @Param('productId') productId: string,
-  ) {
+  getHistory(@Param('productId') productId: string) {
     return this.inventoryService.getHistory(productId);
   }
 

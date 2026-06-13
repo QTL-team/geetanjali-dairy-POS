@@ -1,19 +1,13 @@
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-
-export enum UnitType {
-  KG = 'KG',
-  LITER = 'LITER',
-  PIECE = 'PIECE',
-}
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { UnitType } from '../../common/enums/unit-type.enum';
 
 export class CreateProductDto {
   @IsString()
   name: string;
+
+  @IsOptional()
+  @IsString()
+  gujaratiName?: string;
 
   @IsOptional()
   @IsString()
@@ -24,4 +18,12 @@ export class CreateProductDto {
 
   @IsNumber()
   sellingPrice: number;
+
+  @IsOptional()
+  @IsNumber()
+  availableStock?: number;
+
+  @IsOptional()
+  @IsNumber()
+  lowStockThreshold?: number;
 }

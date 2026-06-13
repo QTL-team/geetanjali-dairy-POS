@@ -42,6 +42,8 @@ model Product {
 
   name String
 
+  gujaratiName String?
+
   description String?
 
   unit UnitType
@@ -90,7 +92,6 @@ model InventoryTransaction {
   product Product @relation(fields: [productId], references: [id])
 }
 
-
 enum OrderStatus {
   PENDING
   PREPARING
@@ -137,6 +138,8 @@ model Order {
 
   customer Customer @relation(fields: [customerId], references: [id])
 
+  invoice Invoice?
+
   items OrderItem[]
 }
 
@@ -156,4 +159,58 @@ model OrderItem {
   order Order @relation(fields: [orderId], references: [id])
 
   product Product @relation(fields: [productId], references: [id])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+}
+
+model Invoice {
+  id String @id @default(uuid())
+
+  invoiceNumber String @unique
+
+  orderId String @unique
+
+  amount Float
+
+  paidAmount Float @default(0)
+
+  balanceAmount Float @default(0)
+
+  status InvoiceStatus @default(DRAFT)
+
+  generatedAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  payments InvoicePayment[]
+}
+
+enum PaymentType {
+  CASH
+  UPI
+  BANK_TRANSFER
+  CHEQUE
+}
+
+model InvoicePayment {
+  id String @id @default(uuid())
+
+  invoiceId String
+
+  amount Float
+
+  paidAt DateTime @default(now())
+
+  method String
+
+  notes String?
+
+  paymentType PaymentType
+
+  invoice Invoice @relation( fields: [invoiceId], references: [id])
 }
