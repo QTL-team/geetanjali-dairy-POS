@@ -20,7 +20,7 @@ model Customer {
 
   name String
 
-  phone String
+  phone String @unique
 
   address String?
 

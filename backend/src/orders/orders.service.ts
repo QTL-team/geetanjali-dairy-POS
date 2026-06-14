@@ -8,7 +8,7 @@ import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async generateOrderNumber() {
     const count = await this.prisma.order.count();
@@ -37,6 +37,16 @@ export class OrdersService {
               address: dto.deliveryAddress,
             },
           });
+        } else {
+          customer = await tx.customer.update({
+            where: {
+              id: customer.id,
+            },
+            data: {
+              name: dto.customerName,
+              address: dto.deliveryAddress,
+            },
+          });
         }
 
         const orderItemsData: Prisma.OrderItemCreateWithoutOrderInput[] = [];
@@ -49,11 +59,15 @@ export class OrdersService {
           });
 
           if (!product) {
-            throw new Error('Product not found');
+            throw new BadRequestException(
+              'Product not found',
+            );
           }
 
           if (product.availableStock < item.quantity) {
-            throw new Error(`${product.name} has insufficient stock`);
+            throw new BadRequestException(
+              `${product.name} has insufficient stock`,
+            );
           }
 
           const itemTotal = product.sellingPrice * item.quantity;
@@ -391,8 +405,7 @@ We look forward to serving you again.`;
 
     for (const item of order.items) {
       doc.text(
-        `${item.product.gujaratiName ?? item.product.name} - ${item.quantity} ${
-          unitMap[item.product.unit]
+        `${item.product.gujaratiName ?? item.product.name} - ${item.quantity} ${unitMap[item.product.unit]
         }`,
       );
     }
