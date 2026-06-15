@@ -9,8 +9,10 @@ export interface DashboardData {
   totalRevenue: number;
   todayRevenue: number;
   pendingPayments: number;
+  futureRevenue: number;
   tomorrowDeliveries: number;
   pendingInvoices: number;
+  totalReturnedProducts?: number;
   lowStockProducts: any[]; // Adjust this when Product type is available
 }
 

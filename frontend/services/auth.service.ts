@@ -14,3 +14,8 @@ export const login = async (
 
   return response.data;
 };
+
+export const changePassword = async (data: any) => {
+  const response = await api.patch("/auth/change-password", data);
+  return response.data;
+};

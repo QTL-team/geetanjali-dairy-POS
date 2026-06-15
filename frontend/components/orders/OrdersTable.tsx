@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Order, OrderStatus, updateOrderStatus, cancelOrder, getDeliveryMessage, downloadWorkerSlip } from "@/services/order.service";
 import { StatusBadge } from "./StatusBadge";
+import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { ViewOrderDialog } from "./ViewOrderDialog";
+import { RecordPaymentDialog } from "./RecordPaymentDialog";
 
 export type SortColumn = "orderNumber" | "customerName" | "phoneNumber" | "deliveryDate" | "totalAmount" | "status" | "createdAt";
 export type SortDirection = "asc" | "desc";
@@ -24,6 +26,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   // Sorting State
   const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
@@ -158,6 +161,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 <TableHead className="cursor-pointer" onClick={() => handleSort("status")}>
                   <div className="flex items-center">Status {renderSortIcon("status")}</div>
                 </TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort("createdAt")}>
                   <div className="flex items-center">Created At {renderSortIcon("createdAt")}</div>
                 </TableHead>
@@ -189,6 +193,9 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                       <StatusBadge status={order.status} />
                     </TableCell>
                     <TableCell>
+                      <PaymentStatusBadge status={order.paymentStatus} />
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-col">
                         <span className="text-sm">{createdD.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
                         <span className="text-xs text-muted-foreground">{createdD.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
@@ -208,6 +215,11 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                             <DropdownMenuItem onClick={() => { setSelectedOrder(order); setViewDialogOpen(true); }}>
                               <Eye className="mr-2 h-4 w-4" /> View Details
                             </DropdownMenuItem>
+                            {(order.status === "DELIVERED" || order.status === "OUT_FOR_DELIVERY") && order.paymentStatus !== "PAID" && (
+                              <DropdownMenuItem onClick={() => { setSelectedOrder(order); setPaymentDialogOpen(true); }}>
+                                <CheckCircle className="mr-2 h-4 w-4" /> Record Payment
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuGroup>
                           <DropdownMenuSeparator />
                           
@@ -316,6 +328,12 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         order={selectedOrder} 
         open={viewDialogOpen} 
         onOpenChange={setViewDialogOpen} 
+      />
+
+      <RecordPaymentDialog
+        order={selectedOrder}
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
       />
     </>
   );

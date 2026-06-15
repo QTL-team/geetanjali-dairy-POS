@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Menu, 
   CircleUser, 
@@ -44,6 +44,7 @@ const navigation = [
 
 export function AppNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { logout } = useAuth();
 
   return (
@@ -113,8 +114,12 @@ export function AppNavbar() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-          <DropdownMenuItem>Support</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/profile")} className="cursor-pointer">
+            Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer">
+            Settings
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
         </DropdownMenuContent>

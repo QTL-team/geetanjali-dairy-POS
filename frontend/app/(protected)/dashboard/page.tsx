@@ -12,6 +12,7 @@ import {
   FileText,
   AlertTriangle
 } from "lucide-react";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
@@ -67,43 +68,67 @@ export default function DashboardPage() {
           title="Total Customers"
           value={data.totalCustomers}
           icon={Users}
+          href="/customers"
         />
         <StatCard
           title="Total Products"
           value={data.totalProducts}
           icon={Package}
+          href="/products"
         />
         <StatCard
           title="Total Orders"
           value={data.totalOrders}
           icon={ShoppingCart}
+          href="/orders"
         />
         <StatCard
           title="Delivered Orders"
           value={data.deliveredOrders}
           icon={Truck}
+          href="/orders"
+        />
+        <StatCard
+          title="Returned Products"
+          value={data.totalReturnedProducts || 0}
+          icon={Package}
+          trend="neutral"
+          trendValue="Total items returned"
+          href="/orders"
         />
         <StatCard
           title="Total Revenue"
           value={`₹${data.totalRevenue.toLocaleString()}`}
           icon={IndianRupee}
+          href="/reports"
         />
         <StatCard
           title="Today's Revenue"
           value={`₹${data.todayRevenue.toLocaleString()}`}
           icon={IndianRupee}
+          href="/reports"
+        />
+        <StatCard
+          title="Estimated Future Revenue"
+          value={`₹${data.futureRevenue.toLocaleString()}`}
+          icon={IndianRupee}
+          trend="neutral"
+          trendValue="Based on pending orders"
+          href="/reports"
         />
         <StatCard
           title="Pending Payments"
-          value={data.pendingPayments}
+          value={`₹${data.pendingPayments.toLocaleString()}`}
           icon={CreditCard}
           trend={data.pendingPayments > 0 ? "down" : "neutral"}
           trendValue={data.pendingPayments > 0 ? "Requires attention" : ""}
+          href="/payments"
         />
         <StatCard
           title="Tomorrow Deliveries"
           value={data.tomorrowDeliveries}
           icon={Clock}
+          href="/orders"
         />
       </div>
 
@@ -124,7 +149,7 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-4">
                 {data.lowStockProducts.map((product: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                  <Link href="/inventory" key={idx} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0 hover:bg-muted/50 p-2 -mx-2 rounded-md transition-colors">
                     <div>
                       <p className="font-medium">{product.name || `Product #${product.id}`}</p>
                       <p className="text-sm text-muted-foreground">Current Stock: {product.stock || 0}</p>
@@ -132,7 +157,7 @@ export default function DashboardPage() {
                     <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 font-medium">
                       Low Stock
                     </Badge>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -146,7 +171,7 @@ export default function DashboardPage() {
             <CardDescription>Items requiring your immediate attention.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+            <Link href="/orders" className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                   <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -157,9 +182,9 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="text-2xl font-bold">{data.tomorrowDeliveries}</div>
-            </div>
+            </Link>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+            <Link href="/orders" className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
                   <ShoppingCart className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -170,9 +195,9 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="text-2xl font-bold">{data.pendingOrders}</div>
-            </div>
+            </Link>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+            <Link href="/invoices" className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-destructive/10 rounded-full">
                   <FileText className="h-5 w-5 text-destructive" />
@@ -183,7 +208,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="text-2xl font-bold">{data.pendingInvoices}</div>
-            </div>
+            </Link>
           </CardContent>
         </Card>
       </div>

@@ -8,9 +8,23 @@ export interface OrderItem {
   productId: string;
   product?: Product;
   quantity: number;
+  returnedQuantity?: number;
+  billedQuantity?: number;
   unitPrice: number;
   lineTotal: number;
 }
+
+export interface OrderReturn {
+  id: string;
+  orderId: string;
+  orderItemId: string;
+  returnedQuantity: number;
+  remarks?: string;
+  createdAt: string;
+  orderItem?: OrderItem;
+}
+
+export type PaymentStatus = "PENDING" | "PARTIAL" | "PAID";
 
 export interface Order {
   id: string;
@@ -20,6 +34,7 @@ export interface Order {
   deliveryDate: string;
   notes?: string;
   status: OrderStatus;
+  paymentStatus?: PaymentStatus;
   totalAmount: number;
   items: OrderItem[];
   createdAt: string;
@@ -28,6 +43,13 @@ export interface Order {
     id: string;
     name: string;
     phone: string;
+  };
+  invoice?: {
+    id: string;
+    amount: number;
+    paidAmount: number;
+    balanceAmount: number;
+    status: string;
   };
 }
 
@@ -66,8 +88,29 @@ export const updateOrderStatus = async (id: string, status: OrderStatus): Promis
   return response.data;
 };
 
+export const recordOrderPayment = async (id: string, amount: number, method: string, notes?: string): Promise<Order> => {
+  const response = await api.post(`/orders/${id}/payment`, { amount, method, notes });
+  return response.data;
+};
+
 export const cancelOrder = async (id: string): Promise<Order> => {
   const response = await api.patch(`/orders/${id}/cancel`);
+  return response.data;
+};
+
+export interface RecordReturnPayload {
+  orderItemId: string;
+  returnedQuantity: number;
+  remarks?: string;
+}
+
+export const getOrderReturns = async (orderId: string): Promise<OrderReturn[]> => {
+  const response = await api.get(`/orders/${orderId}/returns`);
+  return response.data;
+};
+
+export const recordOrderReturn = async (orderId: string, payload: RecordReturnPayload): Promise<OrderReturn> => {
+  const response = await api.post(`/orders/${orderId}/returns`, payload);
   return response.data;
 };
 

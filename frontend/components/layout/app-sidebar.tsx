@@ -11,7 +11,8 @@ import {
   CreditCard,
   Settings,
   Factory,
-  Box
+  Box,
+  BarChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Invoices", href: "/invoices", icon: FileText },
   { name: "Payments", href: "/payments", icon: CreditCard },
+  { name: "Reports", href: "/reports", icon: BarChart },
 ];
 
 export function AppSidebar() {
