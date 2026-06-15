@@ -7,20 +7,17 @@ import {
   Post,
   UseGuards,
   Delete,
-
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
-
 @Controller('customers')
 @UseGuards(JwtAuthGuard)
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) { }
+  constructor(private readonly customersService: CustomersService) {}
 
-  
   @Post()
   create(@Body() dto: CreateCustomerDto) {
     return this.customersService.create(dto);
@@ -28,14 +25,12 @@ export class CustomersController {
 
   @Get()
   findAll() {
-    return this.customersService.findAll();
+    return this.customersService.findAllWithStats();
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-  ) {
-    return this.customersService.findOne(id);
+  findOne(@Param('id') id: string) {
+    return this.customersService.findOneWithDetails(id);
   }
 
   @Patch(':id')
@@ -47,5 +42,4 @@ export class CustomersController {
   remove(@Param('id') id: string) {
     return this.customersService.remove(id);
   }
-
 }

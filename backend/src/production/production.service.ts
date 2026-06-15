@@ -42,8 +42,10 @@ export class ProductionService {
       {
         productId: string;
         name: string;
+        gujaratiName: string | null;
         quantity: number;
         unit: string;
+        currentStock: number;
       }
     >();
 
@@ -60,41 +62,45 @@ export class ProductionService {
         } else {
           productMap.set(item.product.id, {
             productId: item.product.id,
-
             name: item.product.name,
-
+            gujaratiName: item.product.gujaratiName,
             quantity: item.quantity,
-
             unit: item.product.unit,
+            currentStock: item.product.availableStock,
           });
         }
       }
     }
 
-    const lowStockProducts = await this.prisma.product.findMany();
+    const productsToProduce = Array.from(productMap.values())
+      .map((p) => {
+        const remainingAfterProduction = p.currentStock - p.quantity;
+        return {
+          ...p,
+          remainingAfterProduction,
+          status: remainingAfterProduction >= 0 ? 'READY' : 'LOW_STOCK',
+        };
+      })
+      .sort((a, b) => b.quantity - a.quantity);
 
-    const lowStockWarnings = lowStockProducts
-      .filter((product) => product.availableStock <= product.lowStockThreshold)
-      .map((product) => ({
-        productId: product.id,
-        name: product.name,
-        availableStock: product.availableStock,
-        threshold: product.lowStockThreshold,
-        shortage: product.lowStockThreshold - product.availableStock,
+    const lowStockWarnings = productsToProduce
+      .filter((p) => p.status === 'LOW_STOCK')
+      .map((p) => ({
+        productId: p.productId,
+        name: p.name,
+        gujaratiName: p.gujaratiName,
+        required: p.quantity,
+        available: p.currentStock,
+        shortage: Math.abs(p.remainingAfterProduction),
+        unit: p.unit,
       }));
 
     return {
       date: start.toISOString().split('T')[0],
-
       totalOrders: orders.length,
-
       estimatedRevenue,
-
       lowStockWarnings,
-
-      products: Array.from(productMap.values()).sort(
-        (a, b) => b.quantity - a.quantity,
-      ),
+      products: productsToProduce,
     };
   }
 }

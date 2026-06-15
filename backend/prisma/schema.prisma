@@ -9,26 +9,124 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id                String   @id @default(uuid())
+  email             String   @unique
+  password          String
+  businessName      String?
+  phone             String?
+  address           String?
+  gstNumber         String?
+  invoiceFooterText String?
+  createdAt         DateTime @default(now())
 }
 
 model Customer {
-  id String @id @default(uuid())
-
-  name String
-
-  phone String @unique
-
-  address String?
-
-  notes String?
-
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @unique
+  address   String?
+  notes     String?
   createdAt DateTime @default(now())
+  orders    Order[]
+}
 
-  orders Order[]
+model Product {
+  id                    String                 @id @default(uuid())
+  name                  String
+  unit                  UnitType
+  sellingPrice          Float
+  availableStock        Float                  @default(0)
+  reservedStock         Float                  @default(0)
+  returnedStock         Float                  @default(0)
+  lowStockThreshold     Float                  @default(10)
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  description           String?
+  gujaratiName          String?
+  inventoryTransactions InventoryTransaction[]
+  orderItems            OrderItem[]
+}
+
+model InventoryTransaction {
+  id        String                   @id @default(uuid())
+  productId String
+  quantity  Float
+  type      InventoryTransactionType
+  remarks   String?
+  createdAt DateTime                 @default(now())
+  product   Product                  @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  orderNumber       String        @unique
+  customerId        String
+  deliveryDate      DateTime
+  deliveryAddress   String
+  contactNumber     String
+  notes             String?
+  status            OrderStatus   @default(PENDING)
+  totalAmount       Float         @default(0)
+  paymentStatus     PaymentStatus @default(PENDING)
+  isInvoiced        Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  workerSlipPrinted Boolean       @default(false)
+  invoice           Invoice?
+  customer          Customer      @relation(fields: [customerId], references: [id])
+  items             OrderItem[]
+  returns           OrderReturn[]
+}
+
+model OrderItem {
+  id               String        @id @default(uuid())
+  orderId          String
+  productId        String
+  quantity         Float
+  returnedQuantity Float         @default(0)
+  billedQuantity   Float         @default(0)
+  unitPrice        Float
+  totalPrice       Float
+  order            Order         @relation(fields: [orderId], references: [id])
+  product          Product       @relation(fields: [productId], references: [id])
+  returns          OrderReturn[]
+}
+
+model Invoice {
+  id            String           @id @default(uuid())
+  invoiceNumber String           @unique
+  orderId       String           @unique
+  amount        Float
+  status        InvoiceStatus    @default(DRAFT)
+  generatedAt   DateTime         @default(now())
+  balanceAmount Float            @default(0)
+  paidAmount    Float            @default(0)
+  order         Order            @relation(fields: [orderId], references: [id])
+  payments      InvoicePayment[]
+}
+
+model InvoicePayment {
+  id          String      @id @default(uuid())
+  invoiceId   String
+  amount      Float
+  paidAt      DateTime    @default(now())
+  method      String
+  notes       String?
+  paymentType PaymentType
+  invoice     Invoice     @relation(fields: [invoiceId], references: [id])
+}
+
+model OrderReturn {
+  id               String    @id @default(uuid())
+  orderId          String
+  orderItemId      String
+  returnedQuantity Float
+  remarks          String?
+  createdAt        DateTime  @default(now())
+  
+  order            Order     @relation(fields: [orderId], references: [id])
+  orderItem        OrderItem @relation(fields: [orderItemId], references: [id])
 }
 
 enum UnitType {
@@ -37,59 +135,11 @@ enum UnitType {
   PIECE
 }
 
-model Product {
-  id String @id @default(uuid())
-
-  name String
-
-  gujaratiName String?
-
-  description String?
-
-  unit UnitType
-
-  sellingPrice Float
-
-  availableStock Float @default(0)
-
-  reservedStock Float @default(0)
-
-  returnedStock Float @default(0)
-
-  lowStockThreshold Float @default(10)
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  inventoryTransactions InventoryTransaction[]
-
-  orderItems OrderItem[]
-}
-
 enum InventoryTransactionType {
   ADD
   RESERVE
   RETURN
   ADJUSTMENT
-}
-
-model InventoryTransaction {
-  id String @id @default(uuid())
-
-  productId String
-
-  quantity Float
-
-  type InventoryTransactionType
-
-  remarks String?
-
-  createdAt DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id])
 }
 
 enum OrderStatus {
@@ -107,87 +157,11 @@ enum PaymentStatus {
   PAID
 }
 
-model Order {
-  id String @id @default(uuid())
-
-  orderNumber String @unique
-
-  customerId String
-
-  deliveryDate DateTime
-
-  deliveryAddress String
-
-  contactNumber String
-
-  notes String?
-
-  status OrderStatus @default(PENDING)
-
-  totalAmount Float @default(0)
-
-  paymentStatus PaymentStatus @default(PENDING)
-
-  isInvoiced Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  workerSlipPrinted Boolean @default(false)
-
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  invoice Invoice?
-
-  items OrderItem[]
-}
-
-model OrderItem {
-  id String @id @default(uuid())
-
-  orderId String
-
-  productId String
-
-  quantity Float
-
-  unitPrice Float
-
-  totalPrice Float
-
-  order Order @relation(fields: [orderId], references: [id])
-
-  product Product @relation(fields: [productId], references: [id])
-}
-
 enum InvoiceStatus {
   DRAFT
   SENT
-  PARTIAL
   PAID
-}
-
-model Invoice {
-  id String @id @default(uuid())
-
-  invoiceNumber String @unique
-
-  orderId String @unique
-
-  amount Float
-
-  paidAmount Float @default(0)
-
-  balanceAmount Float @default(0)
-
-  status InvoiceStatus @default(DRAFT)
-
-  generatedAt DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id])
-
-  payments InvoicePayment[]
+  PARTIAL
 }
 
 enum PaymentType {
@@ -195,22 +169,4 @@ enum PaymentType {
   UPI
   BANK_TRANSFER
   CHEQUE
-}
-
-model InvoicePayment {
-  id String @id @default(uuid())
-
-  invoiceId String
-
-  amount Float
-
-  paidAt DateTime @default(now())
-
-  method String
-
-  notes String?
-
-  paymentType PaymentType
-
-  invoice Invoice @relation( fields: [invoiceId], references: [id])
 }

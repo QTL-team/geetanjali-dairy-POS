@@ -1,14 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, OrderStatus } from '@prisma/client';
+import {
+  Prisma,
+  OrderStatus,
+  PaymentStatus,
+  InvoiceStatus,
+} from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import { BadRequestException } from '@nestjs/common';
+import { InvoicesService } from '../invoices/invoices.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => InvoicesService))
+    private invoicesService: InvoicesService,
+  ) {}
 
   async generateOrderNumber() {
     const count = await this.prisma.order.count();
@@ -59,9 +69,7 @@ export class OrdersService {
           });
 
           if (!product) {
-            throw new BadRequestException(
-              'Product not found',
-            );
+            throw new BadRequestException('Product not found');
           }
 
           if (product.availableStock < item.quantity) {
@@ -162,6 +170,7 @@ export class OrdersService {
             product: true,
           },
         },
+        invoice: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -194,6 +203,7 @@ export class OrdersService {
             product: true,
           },
         },
+        invoice: true,
       },
     });
   }
@@ -405,7 +415,8 @@ We look forward to serving you again.`;
 
     for (const item of order.items) {
       doc.text(
-        `${item.product.gujaratiName ?? item.product.name} - ${item.quantity} ${unitMap[item.product.unit]
+        `${item.product.gujaratiName ?? item.product.name} - ${item.quantity} ${
+          unitMap[item.product.unit]
         }`,
       );
     }
@@ -420,5 +431,185 @@ We look forward to serving you again.`;
     });
 
     doc.end();
+  }
+
+  async recordPayment(
+    orderId: string,
+    amount: number,
+    method: string,
+    notes?: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { invoice: true },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+
+    if (order.status !== 'DELIVERED' && order.status !== 'OUT_FOR_DELIVERY') {
+      throw new BadRequestException(
+        'Can only record payment for delivered or out for delivery orders',
+      );
+    }
+
+    let invoice = order.invoice;
+
+    if (!invoice) {
+      invoice = await this.invoicesService.createFromOrder(orderId);
+    }
+
+    const updatedInvoice = await this.invoicesService.addPayment(
+      invoice.id,
+      amount,
+      method,
+      notes,
+    );
+
+    let paymentStatus: PaymentStatus = 'PENDING';
+    if (updatedInvoice.status === 'PAID') {
+      paymentStatus = 'PAID';
+    } else if (updatedInvoice.status === 'PARTIAL') {
+      paymentStatus = 'PARTIAL';
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus },
+    });
+  }
+
+  async getReturns(orderId: string) {
+    return this.prisma.orderReturn.findMany({
+      where: { orderId },
+      include: { orderItem: { include: { product: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async recordReturn(
+    orderId: string,
+    orderItemId: string,
+    returnedQuantity: number,
+    remarks?: string,
+  ) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { items: true, invoice: true },
+        });
+
+        if (!order) {
+          throw new BadRequestException('Order not found');
+        }
+
+        if (order.status === 'CANCELLED') {
+          throw new BadRequestException(
+            'Cannot return items for a cancelled order',
+          );
+        }
+
+        const item = order.items.find((i) => i.id === orderItemId);
+        if (!item) {
+          throw new BadRequestException('Order item not found');
+        }
+
+        const remainingQuantity = item.quantity - item.returnedQuantity;
+        if (returnedQuantity <= 0 || returnedQuantity > remainingQuantity) {
+          throw new BadRequestException('Invalid returned quantity');
+        }
+
+        // 1. Create OrderReturn
+        const orderReturn = await tx.orderReturn.create({
+          data: {
+            orderId,
+            orderItemId,
+            returnedQuantity,
+            remarks,
+          },
+        });
+
+        // 2. Update OrderItem
+        const newReturnedQuantity = item.returnedQuantity + returnedQuantity;
+        const newBilledQuantity = item.quantity - newReturnedQuantity;
+
+        await tx.orderItem.update({
+          where: { id: orderItemId },
+          data: {
+            returnedQuantity: newReturnedQuantity,
+            billedQuantity: newBilledQuantity,
+          },
+        });
+
+        // 3. Update Product & InventoryTransaction
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            returnedStock: { increment: returnedQuantity },
+          },
+        });
+
+        await tx.inventoryTransaction.create({
+          data: {
+            productId: item.productId,
+            quantity: returnedQuantity,
+            type: 'RETURN',
+            remarks: `Order Return - ${order.orderNumber}`,
+          },
+        });
+
+        // 4. Recalculate Order totalAmount and Invoice amount
+        let newTotalAmount = 0;
+        const updatedItems = await tx.orderItem.findMany({
+          where: { orderId },
+        });
+        for (const updatedItem of updatedItems) {
+          newTotalAmount += updatedItem.billedQuantity * updatedItem.unitPrice;
+        }
+
+        await tx.order.update({
+          where: { id: orderId },
+          data: { totalAmount: newTotalAmount },
+        });
+
+        if (order.invoice) {
+          const newBalance = newTotalAmount - order.invoice.paidAmount;
+          let newStatus: InvoiceStatus = order.invoice.status;
+          if (newBalance <= 0 && newTotalAmount > 0) newStatus = 'PAID';
+          else if (order.invoice.paidAmount > 0 && newBalance > 0)
+            newStatus = 'PARTIAL';
+          else if (
+            order.invoice.paidAmount === 0 &&
+            order.invoice.status !== 'DRAFT'
+          )
+            newStatus = 'SENT';
+
+          await tx.invoice.update({
+            where: { id: order.invoice.id },
+            data: {
+              amount: newTotalAmount,
+              balanceAmount: newBalance,
+              status: newStatus,
+            },
+          });
+
+          // Sync payment status back to order
+          let paymentStatus: PaymentStatus = 'PENDING';
+          if (newStatus === 'PAID') paymentStatus = 'PAID';
+          else if (newStatus === 'PARTIAL') paymentStatus = 'PARTIAL';
+          else if (newBalance <= 0) paymentStatus = 'PAID';
+
+          await tx.order.update({
+            where: { id: orderId },
+            data: { paymentStatus },
+          });
+        }
+
+        return orderReturn;
+      },
+      { timeout: 15000 },
+    );
   }
 }

@@ -32,11 +32,37 @@ export class DashboardService {
       },
     });
 
-    const pendingPayments = await this.prisma.invoice.aggregate({
+    const pendingInvoicesAggr = await this.prisma.invoice.aggregate({
       _sum: {
         balanceAmount: true,
       },
     });
+
+    const pendingUninvoicedOrdersAggr = await this.prisma.order.aggregate({
+      where: {
+        status: 'DELIVERED',
+        invoice: null,
+      },
+      _sum: {
+        totalAmount: true,
+      },
+    });
+
+    const pendingPayments =
+      (pendingInvoicesAggr._sum.balanceAmount || 0) +
+      (pendingUninvoicedOrdersAggr._sum.totalAmount || 0);
+
+    const futureRevenueAggr = await this.prisma.order.aggregate({
+      where: {
+        status: {
+          in: ['PENDING', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'],
+        },
+      },
+      _sum: {
+        totalAmount: true,
+      },
+    });
+    const futureRevenue = futureRevenueAggr._sum.totalAmount || 0;
 
     const lowStockProducts = await this.prisma.product.findMany();
 
@@ -93,6 +119,14 @@ export class DashboardService {
       },
     });
 
+    const totalReturnedProductsAggr = await this.prisma.orderReturn.aggregate({
+      _sum: {
+        returnedQuantity: true,
+      },
+    });
+    const totalReturnedProducts =
+      totalReturnedProductsAggr._sum.returnedQuantity || 0;
+
     return {
       totalCustomers,
 
@@ -108,13 +142,17 @@ export class DashboardService {
 
       todayRevenue: todayRevenue._sum.paidAmount || 0,
 
-      pendingPayments: pendingPayments._sum.balanceAmount || 0,
+      pendingPayments,
+
+      futureRevenue,
 
       tomorrowDeliveries,
 
       pendingInvoices,
 
       lowStockProducts: lowStock,
+
+      totalReturnedProducts,
     };
   }
 }

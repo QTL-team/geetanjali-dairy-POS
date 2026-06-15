@@ -18,6 +18,16 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
+  @Get()
+  findAll() {
+    return this.invoicesService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.invoicesService.findOne(id);
+  }
+
   @Post('order/:orderId')
   createFromOrder(
     @Param('orderId')

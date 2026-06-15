@@ -21,6 +21,11 @@ export class InventoryController {
     return this.inventoryService.getHistory(productId);
   }
 
+  @Get('summary')
+  getSummary() {
+    return this.inventoryService.getSummary();
+  }
+
   @Post('reserve-stock/:productId')
   reserveStock(
     @Param('productId') productId: string,

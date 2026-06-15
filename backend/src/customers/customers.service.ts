@@ -20,6 +20,53 @@ export class CustomersService {
       },
     });
   }
+
+  async findAllWithStats() {
+    const customers = await this.prisma.customer.findMany({
+      include: {
+        orders: {
+          include: {
+            invoice: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return customers.map((customer) => {
+      let totalRevenue = 0;
+      let pendingAmount = 0;
+      let lastOrderDate: Date | null = null;
+
+      customer.orders.forEach((order) => {
+        if (order.createdAt) {
+          const orderDate = new Date(order.createdAt);
+          if (!lastOrderDate || orderDate > lastOrderDate) {
+            lastOrderDate = orderDate;
+          }
+        }
+        if (order.invoice) {
+          totalRevenue += order.invoice.paidAmount || 0;
+          pendingAmount += order.invoice.balanceAmount || 0;
+        } else if (order.status === 'DELIVERED') {
+          pendingAmount += order.totalAmount || 0;
+        }
+      });
+
+      // Strip orders from the return to keep payload light
+      const { orders, ...customerData } = customer;
+
+      return {
+        ...customerData,
+        totalOrders: orders.length,
+        totalRevenue,
+        pendingAmount,
+        lastOrderDate,
+      };
+    });
+  }
   update(id: string, updateCustomerDto: UpdateCustomerDto) {
     return this.prisma.customer.update({
       where: { id },
@@ -34,9 +81,37 @@ export class CustomersService {
   }
 
   findOne(id: string) {
-  return this.prisma.customer.findUnique({
-    where: { id },
-  });
-}
+    return this.prisma.customer.findUnique({
+      where: { id },
+    });
+  }
 
+  findOneWithDetails(id: string) {
+    return this.prisma.customer.findUnique({
+      where: { id },
+      include: {
+        orders: {
+          include: {
+            invoice: {
+              include: {
+                payments: {
+                  orderBy: {
+                    paidAt: 'desc',
+                  },
+                },
+              },
+            },
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+  }
 }

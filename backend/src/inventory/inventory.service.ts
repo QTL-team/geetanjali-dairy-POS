@@ -122,4 +122,29 @@ export class InventoryService {
       return updatedProduct;
     });
   }
+
+  async getSummary() {
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        sellingPrice: true,
+        availableStock: true,
+        reservedStock: true,
+        lowStockThreshold: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return products.map((product) => ({
+      ...product,
+      isLowStock: product.availableStock < product.lowStockThreshold,
+    }));
+  }
 }

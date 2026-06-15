@@ -8,6 +8,61 @@ import { PrismaService } from '../prisma/prisma.service';
 export class InvoicesService {
   constructor(private prisma: PrismaService) {}
 
+  async findAll() {
+    const invoices = await this.prisma.invoice.findMany({
+      orderBy: { generatedAt: 'desc' },
+      include: {
+        order: {
+          include: {
+            customer: {
+              select: { id: true, name: true, phone: true },
+            },
+          },
+        },
+      },
+    });
+
+    return invoices.map((invoice) => ({
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      amount: invoice.amount,
+      paidAmount: invoice.paidAmount,
+      balanceAmount: invoice.balanceAmount,
+      status: invoice.status,
+      generatedAt: invoice.generatedAt,
+      order: {
+        id: invoice.order.id,
+        orderNumber: invoice.order.orderNumber,
+      },
+      customer: invoice.order.customer,
+    }));
+  }
+
+  async findOne(id: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id },
+      include: {
+        order: {
+          include: {
+            customer: true,
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
+        payments: true,
+      },
+    });
+
+    if (!invoice) {
+      throw new BadRequestException('Invoice not found');
+    }
+
+    return invoice;
+  }
+
   async generateInvoiceNumber() {
     const count = await this.prisma.invoice.count();
 
@@ -107,7 +162,7 @@ export class InvoicesService {
       },
     });
 
-    return this.prisma.invoice.update({
+    const updatedInvoice = await this.prisma.invoice.update({
       where: {
         id: invoiceId,
       },
@@ -118,6 +173,21 @@ export class InvoicesService {
         status,
       },
     });
+
+    // Sync the Payment Status to the Order
+    let paymentStatus: 'PENDING' | 'PARTIAL' | 'PAID' = 'PENDING';
+    if (status === 'PAID') {
+      paymentStatus = 'PAID';
+    } else if (status === 'PARTIAL') {
+      paymentStatus = 'PARTIAL';
+    }
+
+    await this.prisma.order.update({
+      where: { id: invoice.orderId },
+      data: { paymentStatus },
+    });
+
+    return updatedInvoice;
   }
 
   async getWhatsappMessage(invoiceId: string) {
@@ -300,11 +370,10 @@ Geetanjali Dairy`;
     const startY = doc.y;
 
     doc.text('Product', 50, startY);
-
-    doc.text('Qty', 250, startY);
-
-    doc.text('Rate', 330, startY);
-
+    doc.text('Ord. Qty', 200, startY);
+    doc.text('Ret.', 270, startY);
+    doc.text('Bill', 320, startY);
+    doc.text('Rate', 380, startY);
     doc.text('Amount', 450, startY);
 
     doc.moveDown();
@@ -321,12 +390,13 @@ Geetanjali Dairy`;
       const y = doc.y;
 
       doc.text(item.product.name, 50, y);
+      doc.text(`${item.quantity}`, 200, y);
+      doc.text(`${item.returnedQuantity || 0}`, 270, y);
+      doc.text(`${item.billedQuantity || item.quantity}`, 320, y);
+      doc.text(`₹${item.unitPrice}`, 380, y);
 
-      doc.text(`${item.quantity}`, 250, y);
-
-      doc.text(`₹${item.unitPrice}`, 330, y);
-
-      doc.text(`₹${item.totalPrice}`, 450, y);
+      const amount = (item.billedQuantity || item.quantity) * item.unitPrice;
+      doc.text(`₹${amount.toFixed(2)}`, 450, y);
 
       doc.moveDown();
     }

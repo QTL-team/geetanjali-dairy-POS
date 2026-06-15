@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { CreateOrderReturnDto } from './dto/create-order-return.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @Controller('orders')
@@ -65,5 +66,33 @@ export class OrdersController {
   @Get(':id/worker-slip/pdf')
   generateWorkerSlipPdf(@Param('id') id: string, @Res() res: Response) {
     return this.ordersService.generateWorkerSlipPdf(id, res);
+  }
+
+  @Post(':id/payment')
+  recordPayment(
+    @Param('id') id: string,
+    @Body() dto: { amount: number; method: string; notes?: string },
+  ) {
+    return this.ordersService.recordPayment(
+      id,
+      dto.amount,
+      dto.method,
+      dto.notes,
+    );
+  }
+
+  @Get(':id/returns')
+  getReturns(@Param('id') id: string) {
+    return this.ordersService.getReturns(id);
+  }
+
+  @Post(':id/returns')
+  recordReturn(@Param('id') id: string, @Body() dto: CreateOrderReturnDto) {
+    return this.ordersService.recordReturn(
+      id,
+      dto.orderItemId,
+      dto.returnedQuantity,
+      dto.remarks,
+    );
   }
 }
