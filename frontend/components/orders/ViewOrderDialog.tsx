@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Order, getOrderReturns } from "@/services/order.service";
 import { StatusBadge } from "./StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RecordReturnDialog } from "./RecordReturnDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -41,8 +42,8 @@ export function ViewOrderDialog({ order, open, onOpenChange }: ViewOrderDialogPr
             </div>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 p-6 min-h-0">
-            <div className="grid gap-8">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-6 grid gap-8">
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2 text-muted-foreground tracking-tight">Customer Details</h3>
@@ -73,6 +74,36 @@ export function ViewOrderDialog({ order, open, onOpenChange }: ViewOrderDialogPr
                       <span className="text-muted-foreground font-medium mb-1">Notes</span>
                       <span>{order.notes || "-"}</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg border-b pb-2 text-muted-foreground tracking-tight">Slip Statuses</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div className="bg-muted/10 p-4 rounded-lg border border-border/50 flex flex-col items-center justify-center gap-2">
+                    <span className="text-muted-foreground font-medium">Worker Slip</span>
+                    {order.workerSlipPrinted ? (
+                      <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200">Printed</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                    )}
+                  </div>
+                  <div className="bg-muted/10 p-4 rounded-lg border border-border/50 flex flex-col items-center justify-center gap-2">
+                    <span className="text-muted-foreground font-medium">Delivery Slip</span>
+                    {order.deliverySlipPrinted ? (
+                      <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200">Generated</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                    )}
+                  </div>
+                  <div className="bg-muted/10 p-4 rounded-lg border border-border/50 flex flex-col items-center justify-center gap-2">
+                    <span className="text-muted-foreground font-medium">Bill</span>
+                    {order.invoice ? (
+                      <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200">Generated</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -143,7 +174,7 @@ export function ViewOrderDialog({ order, open, onOpenChange }: ViewOrderDialogPr
             </div>
           </ScrollArea>
 
-          <div className="p-6 border-t bg-muted/10 shrink-0">
+          <div className="p-6 border-t bg-background shrink-0 z-10">
             <div className="flex justify-between items-center mb-6">
               <span className="font-semibold text-lg text-muted-foreground">Grand Total</span>
               <span className="font-bold text-3xl text-primary tracking-tight">₹{(order.totalAmount || 0).toFixed(2)}</span>

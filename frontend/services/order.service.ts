@@ -39,6 +39,8 @@ export interface Order {
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+  workerSlipPrinted?: boolean;
+  deliverySlipPrinted?: boolean;
   customer?: {
     id: string;
     name: string;
@@ -129,6 +131,26 @@ export const downloadWorkerSlip = async (id: string, orderNumber: string): Promi
   const a = document.createElement("a");
   a.href = url;
   a.setAttribute("download", `WorkerSlip_${orderNumber}.pdf`);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+export const getDeliverySlip = async (id: string) => {
+  const response = await api.get(`/orders/${id}/delivery-slip`);
+  return response.data;
+};
+
+export const downloadDeliverySlipPdf = async (id: string, orderNumber: string): Promise<void> => {
+  const response = await api.get(`/orders/${id}/delivery-slip/pdf`, {
+    responseType: "blob",
+  });
+  
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const a = document.createElement("a");
+  a.href = url;
+  a.setAttribute("download", `DeliverySlip_${orderNumber}.pdf`);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

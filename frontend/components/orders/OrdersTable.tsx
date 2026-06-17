@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Eye, Ban, FileText, MessageSquare, Check, Clock, Package, Truck, CheckCircle, ChevronsUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { MoreHorizontal, Eye, Ban, FileText, MessageSquare, Check, Clock, Package, Truck, CheckCircle, ChevronsUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Receipt, MessageCircle, Download, CornerUpLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +14,8 @@ import { StatusBadge } from "./StatusBadge";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { ViewOrderDialog } from "./ViewOrderDialog";
 import { RecordPaymentDialog } from "./RecordPaymentDialog";
+import { DeliverySlipDialog } from "./DeliverySlipDialog";
+import { RecordReturnDialog } from "./RecordReturnDialog";
 import { generateInvoice, downloadBillPdf } from "@/services/invoice.service";
 import api from "@/lib/api/axios";
 
@@ -29,6 +31,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [deliverySlipDialogOpen, setDeliverySlipDialogOpen] = useState(false);
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
 
   // Sorting State
   const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
@@ -174,37 +178,44 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         <DropdownMenuGroup>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => { setSelectedOrder(order); setViewDialogOpen(true); }}>
-            <Eye className="mr-2 h-4 w-4" /> View Details
+            <Eye className="mr-2 h-4 w-4" /> View Order
           </DropdownMenuItem>
-          {(order.status === "DELIVERED" || order.status === "OUT_FOR_DELIVERY") && order.paymentStatus !== "PAID" && (
-            <DropdownMenuItem onClick={() => { setSelectedOrder(order); setPaymentDialogOpen(true); }}>
-              <CheckCircle className="mr-2 h-4 w-4" /> Record Payment
+          <DropdownMenuItem onClick={() => handleWorkerSlip(order.id, order.orderNumber)}>
+            <ClipboardList className="mr-2 h-4 w-4" /> Worker Slip
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { setSelectedOrder(order); setDeliverySlipDialogOpen(true); }}>
+            <Truck className="mr-2 h-4 w-4" /> Delivery Boy Slip
+          </DropdownMenuItem>
+          {order.status !== 'CANCELLED' && (
+            <DropdownMenuItem onClick={() => { setSelectedOrder(order); setReturnDialogOpen(true); }}>
+              <CornerUpLeft className="mr-2 h-4 w-4" /> Record Return
             </DropdownMenuItem>
           )}
 
           {order.status === "DELIVERED" && !order.invoice && (
             <DropdownMenuItem onClick={() => handleGenerateBill(order.id)}>
-              <FileText className="mr-2 h-4 w-4" /> Generate Bill
+              <Receipt className="mr-2 h-4 w-4" /> Generate Bill
             </DropdownMenuItem>
           )}
 
           {order.invoice && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <FileText className="mr-2 h-4 w-4" /> Bill Actions
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => window.open(`/invoices`, '_self')}>
-                  <Eye className="mr-2 h-4 w-4" /> View Bills
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownloadBillPdf(order.invoice!.id, order.invoice!.invoiceNumber || 'Draft')}>
-                  <FileText className="mr-2 h-4 w-4" /> Download Bill PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleWhatsAppBill(order.invoice!.id)}>
-                  <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp Bill
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+            <>
+              <DropdownMenuItem onClick={() => window.open(`/invoices`, '_self')}>
+                <FileText className="mr-2 h-4 w-4" /> View Bill
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadBillPdf(order.invoice!.id, order.invoice!.invoiceNumber || 'Draft')}>
+                <Download className="mr-2 h-4 w-4" /> Download Bill PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleWhatsAppBill(order.invoice!.id)}>
+                <MessageCircle className="mr-2 h-4 w-4" /> Share Bill WhatsApp
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {(order.status === "DELIVERED" || order.status === "OUT_FOR_DELIVERY") && order.paymentStatus !== "PAID" && (
+            <DropdownMenuItem onClick={() => { setSelectedOrder(order); setPaymentDialogOpen(true); }}>
+              <CheckCircle className="mr-2 h-4 w-4" /> Record Payment
+            </DropdownMenuItem>
           )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -234,12 +245,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             
-            <DropdownMenuItem onClick={() => handleWorkerSlip(order.id, order.orderNumber)}>
-              <FileText className="mr-2 h-4 w-4" /> Print Worker Slip
-            </DropdownMenuItem>
-            
             <DropdownMenuItem onClick={() => handleWhatsApp(order.id)}>
-              <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp Delivery
+              <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp Delivery
             </DropdownMenuItem>
             
             <DropdownMenuSeparator />
@@ -468,6 +475,21 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
       />
+
+      <DeliverySlipDialog
+        orderId={selectedOrder?.id || null}
+        orderNumber={selectedOrder?.orderNumber || ""}
+        open={deliverySlipDialogOpen}
+        onOpenChange={setDeliverySlipDialogOpen}
+      />
+
+      {selectedOrder && (
+        <RecordReturnDialog
+          order={selectedOrder}
+          open={returnDialogOpen}
+          onOpenChange={setReturnDialogOpen}
+        />
+      )}
     </>
   );
 }
