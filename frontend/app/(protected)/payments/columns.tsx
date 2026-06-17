@@ -3,14 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { PaymentSummary } from "@/services/payment.service";
 import { format } from "date-fns";
-import { MoreHorizontal, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface ColumnActions {
   onView: (payment: PaymentSummary) => void;
@@ -61,18 +55,12 @@ export const getColumns = (actions: ColumnActions): ColumnDef<PaymentSummary>[] 
       const payment = row.original;
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => actions.onView(payment)}>
-              <Eye className="mr-2 h-4 w-4" />
-              View Details
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => actions.onView(payment)}>
+            <Eye className="mr-2 h-4 w-4" />
+            View
+          </Button>
+        </div>
       );
     },
   },

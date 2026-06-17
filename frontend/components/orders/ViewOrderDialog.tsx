@@ -26,7 +26,7 @@ export function ViewOrderDialog({ order, open, onOpenChange }: ViewOrderDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <div className="flex items-center justify-between mt-4">
             <div>
@@ -68,7 +68,7 @@ export function ViewOrderDialog({ order, open, onOpenChange }: ViewOrderDialogPr
 
         <div className="space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Order Items</h3>
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
@@ -105,7 +105,7 @@ export function ViewOrderDialog({ order, open, onOpenChange }: ViewOrderDialogPr
         {returns && returns.length > 0 && (
           <div className="space-y-4">
             <h3 className="font-semibold text-lg border-b pb-2">Return History</h3>
-            <div className="border rounded-md">
+            <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>

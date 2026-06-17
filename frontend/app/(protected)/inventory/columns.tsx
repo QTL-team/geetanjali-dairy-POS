@@ -1,18 +1,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, FileText, ArrowRightLeft } from "lucide-react";
+import { FileText, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuGroup,
-} from "@/components/ui/dropdown-menu";
 import { InventorySummary } from "@/services/inventory.service";
 
 interface InventoryColumnsProps {
@@ -81,27 +72,13 @@ export const getColumns = ({ onAdjustStock, onViewHistory }: InventoryColumnsPro
       const product = row.original;
 
       return (
-        <div className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger render={
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            } />
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => onAdjustStock(product)}>
-                  <ArrowRightLeft className="mr-2 h-4 w-4" /> Adjust Stock
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onViewHistory(product)}>
-                  <FileText className="mr-2 h-4 w-4" /> View History
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => onAdjustStock(product)}>
+            <ArrowRightLeft className="mr-2 h-4 w-4" /> Adjust Stock
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onViewHistory(product)}>
+            <FileText className="mr-2 h-4 w-4" /> History
+          </Button>
         </div>
       );
     },
