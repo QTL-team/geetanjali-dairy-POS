@@ -26,7 +26,7 @@ export const getColumns = ({ onView }: ColumnsProps): import("@tanstack/react-ta
     accessorKey: "name",
     header: "Name",
     cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
+      <div className="text-base md:text-lg font-semibold text-foreground">{row.getValue("name")}</div>
     ),
   },
   {
@@ -35,7 +35,7 @@ export const getColumns = ({ onView }: ColumnsProps): import("@tanstack/react-ta
     cell: ({ row }) => {
       const phone = row.getValue("phone") as string;
       return (
-        <a href={`tel:${phone}`} className="text-blue-600 hover:underline">
+        <a href={`tel:${phone}`} className="text-base text-blue-600 hover:underline">
           {phone}
         </a>
       );
@@ -46,14 +46,14 @@ export const getColumns = ({ onView }: ColumnsProps): import("@tanstack/react-ta
     header: "Address",
     cell: ({ row }) => {
       const address = row.getValue("address") as string;
-      return <div className="max-w-[200px] truncate">{address || "-"}</div>;
+      return <div className="max-w-[200px] text-base truncate">{address || "-"}</div>;
     },
   },
   {
     accessorKey: "totalOrders",
     header: "Total Orders",
     cell: ({ row }) => (
-      <div className="text-center">{row.getValue("totalOrders")}</div>
+      <div className="text-center text-base">{row.getValue("totalOrders")}</div>
     ),
   },
   {
@@ -61,7 +61,7 @@ export const getColumns = ({ onView }: ColumnsProps): import("@tanstack/react-ta
     header: "Total Revenue",
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("totalRevenue"));
-      return <div className="text-emerald-600 font-medium">₹{amount.toLocaleString("en-IN")}</div>;
+      return <div className="text-lg font-bold tabular-nums text-foreground">₹{amount.toLocaleString("en-IN")}</div>;
     },
   },
   {
@@ -70,7 +70,7 @@ export const getColumns = ({ onView }: ColumnsProps): import("@tanstack/react-ta
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("pendingAmount"));
       return (
-        <div className={`font-medium ${amount > 0 ? "text-destructive" : ""}`}>
+        <div className={`text-lg font-bold tabular-nums ${amount > 0 ? "text-destructive" : "text-foreground"}`}>
           ₹{amount.toLocaleString("en-IN")}
         </div>
       );

@@ -63,7 +63,7 @@ export default function DashboardPage() {
       />
       
       {/* Top Section - 8 Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         <StatCard
           title="Total Customers"
           value={data.totalCustomers}

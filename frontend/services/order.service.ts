@@ -46,6 +46,7 @@ export interface Order {
   };
   invoice?: {
     id: string;
+    invoiceNumber: string;
     amount: number;
     paidAmount: number;
     balanceAmount: number;

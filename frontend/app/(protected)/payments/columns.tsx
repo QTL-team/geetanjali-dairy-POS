@@ -19,17 +19,17 @@ export const getColumns = (actions: ColumnActions): ColumnDef<PaymentSummary>[] 
   {
     accessorKey: "invoiceNumber",
     header: "Invoice #",
-    cell: ({ row }) => <div className="font-medium">{row.original.invoiceNumber}</div>,
+    cell: ({ row }) => <div className="text-base font-medium text-muted-foreground">{row.original.invoiceNumber}</div>,
   },
   {
     accessorKey: "customerName",
     header: "Customer",
-    cell: ({ row }) => <div className="font-medium">{row.original.customerName}</div>,
+    cell: ({ row }) => <div className="text-base md:text-lg font-semibold text-foreground">{row.original.customerName}</div>,
   },
   {
     accessorKey: "amount",
     header: "Amount",
-    cell: ({ row }) => <div className="font-medium text-emerald-600">₹{row.getValue("amount")}</div>,
+    cell: ({ row }) => <div className="text-lg font-bold tabular-nums text-foreground">₹{row.getValue("amount")}</div>,
   },
   {
     accessorKey: "method",

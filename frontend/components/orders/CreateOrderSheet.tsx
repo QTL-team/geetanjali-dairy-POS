@@ -121,7 +121,7 @@ export function CreateOrderSheet({ open, onOpenChange }: CreateOrderSheetProps) 
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="customerName">Customer Name</Label>
               <Input id="customerName" {...form.register("customerName")} placeholder="John Doe" />
@@ -143,7 +143,7 @@ export function CreateOrderSheet({ open, onOpenChange }: CreateOrderSheetProps) 
             <Textarea id="deliveryAddress" {...form.register("deliveryAddress")} placeholder="123 Main St, Area" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="deliveryDate">Delivery Date</Label>
               <Input id="deliveryDate" type="date" {...form.register("deliveryDate")} />
@@ -185,8 +185,8 @@ export function CreateOrderSheet({ open, onOpenChange }: CreateOrderSheetProps) 
                 const lineTotal = qty * price;
 
                 return (
-                  <div key={field.id} className="grid grid-cols-12 gap-2 items-center bg-muted/30 p-2 rounded-lg border">
-                    <div className="col-span-5">
+                  <div key={field.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-2 items-center bg-muted/30 p-3 sm:p-2 rounded-lg border">
+                    <div className="sm:col-span-5">
                       <Select
                         value={currentProduct}
                         onValueChange={(val) => {
@@ -196,7 +196,7 @@ export function CreateOrderSheet({ open, onOpenChange }: CreateOrderSheetProps) 
                           }
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-11 sm:h-10">
                           <SelectValue placeholder="Select...">
                             {products.find(p => p.id === currentProduct)?.name}
                           </SelectValue>
@@ -214,13 +214,13 @@ export function CreateOrderSheet({ open, onOpenChange }: CreateOrderSheetProps) 
                       )}
                     </div>
                     
-                    <div className="col-span-3 relative flex items-center">
+                    <div className="sm:col-span-3 relative flex items-center">
                       <Input 
                         type="number" 
                         step="0.01" 
                         placeholder="Qty" 
                         {...form.register(`items.${index}.quantity`)} 
-                        className={unit ? "pr-12" : ""}
+                        className={`h-11 sm:h-10 ${unit ? "pr-12" : ""}`}
                       />
                       {unit && (
                         <span className="absolute right-3 text-xs text-muted-foreground font-medium lowercase">
@@ -229,20 +229,23 @@ export function CreateOrderSheet({ open, onOpenChange }: CreateOrderSheetProps) 
                       )}
                     </div>
                     
-                    <div className="col-span-3 text-right">
-                      <p className="text-sm font-medium">₹{lineTotal.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">@ ₹{price.toFixed(2)}</p>
+                    <div className="sm:col-span-3 flex justify-between sm:block text-right">
+                      <span className="sm:hidden text-sm font-medium text-muted-foreground">Amount:</span>
+                      <div>
+                        <p className="text-sm font-medium">₹{lineTotal.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">@ ₹{price.toFixed(2)}</p>
+                      </div>
                     </div>
 
-                    <div className="col-span-1 text-right">
+                    <div className="sm:col-span-1 text-right flex justify-end">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-11 w-11 sm:h-10 sm:w-10"
                         onClick={() => remove(index)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   </div>

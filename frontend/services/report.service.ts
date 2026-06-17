@@ -36,3 +36,21 @@ export const getOutstandingBalancesReport = async (): Promise<OutstandingBalance
   const response = await api.get('/reports/outstanding');
   return response.data;
 };
+
+export interface ReturnMetrics {
+  totalReturnedQty: number;
+  totalReturnValue: number;
+  topReturnedProducts: { name: string; totalReturned: number }[];
+  customerWiseReturns: { name: string; totalReturned: number }[];
+  totalReturnedStockValue: number;
+}
+
+export const getReturnMetrics = async (startDate?: string, endDate?: string): Promise<ReturnMetrics> => {
+  const params = new URLSearchParams();
+  if (startDate) params.append("startDate", startDate);
+  if (endDate) params.append("endDate", endDate);
+  
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await api.get(`/reports/returns${query}`);
+  return response.data;
+};

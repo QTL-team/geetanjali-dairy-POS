@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { getCustomers, CustomerStats } from "@/services/customer.service";
 import { getColumns } from "./columns";
 import { CustomerDialog } from "./components/customer-dialog";
+import { StatCard } from "@/components/shared/stat-card";
 
 export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,48 +87,30 @@ export default function CustomersPage() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCustomers}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
-            <UserCheck className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{activeCustomers}</div>
-          </CardContent>
-        </Card>
-
-        <Card className={outstandingCustomers > 0 ? "border-destructive/50" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Outstanding Balances</CardTitle>
-            <ShieldAlert className={`h-4 w-4 ${outstandingCustomers > 0 ? "text-destructive" : "text-muted-foreground"}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${outstandingCustomers > 0 ? "text-destructive" : ""}`}>
-              {outstandingCustomers}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Customers with pending amount</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Total Customer Revenue</CardTitle>
-            <IndianRupee className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">₹{totalRevenue.toLocaleString('en-IN')}</div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Customers"
+          value={totalCustomers}
+          icon={Users}
+        />
+        <StatCard
+          title="Active Customers"
+          value={activeCustomers}
+          icon={UserCheck}
+          trend="neutral"
+          trendValue="Have placed orders"
+        />
+        <StatCard
+          title="Outstanding Balances"
+          value={outstandingCustomers}
+          icon={ShieldAlert}
+          trend={outstandingCustomers > 0 ? "down" : "neutral"}
+          trendValue={outstandingCustomers > 0 ? "Customers with pending amount" : "All cleared"}
+        />
+        <StatCard
+          title="Total Revenue"
+          value={`₹${totalRevenue.toLocaleString('en-IN')}`}
+          icon={IndianRupee}
+        />
       </div>
 
       {customers.length === 0 ? (

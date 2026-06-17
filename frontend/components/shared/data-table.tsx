@@ -46,7 +46,8 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="rounded-md border bg-card">
+      {/* Desktop Table View */}
+      <div className="hidden lg:block rounded-md border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -95,6 +96,40 @@ export function DataTable<TData, TValue>({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="grid grid-cols-1 gap-4 lg:hidden">
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <div key={row.id} className="rounded-xl border bg-card p-4 shadow-sm flex flex-col gap-3">
+              {row.getVisibleCells().map((cell) => {
+                const headerText = typeof cell.column.columnDef.header === 'string' 
+                  ? cell.column.columnDef.header 
+                  : cell.column.id.charAt(0).toUpperCase() + cell.column.id.slice(1);
+                  
+                if (cell.column.id === 'actions') {
+                  return (
+                    <div key={cell.id} className="pt-3 mt-1 border-t flex justify-end">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div key={cell.id} className="flex justify-between items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{headerText}</span>
+                    <span className="text-base text-foreground text-right">{flexRender(cell.column.columnDef.cell, cell.getContext())}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ))
+        ) : (
+          <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+            No results.
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <Button

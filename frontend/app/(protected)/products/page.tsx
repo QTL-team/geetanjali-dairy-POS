@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, AlertTriangle, PackageOpen } from "lucide-react";
+import { Search, AlertTriangle, PackageOpen, Package, AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
@@ -13,6 +13,7 @@ import { getProducts } from "@/services/product.service";
 import { columns } from "@/components/products/columns";
 import { ProductsSkeleton } from "@/components/products/products-skeleton";
 import { AddProductDialog } from "@/components/products/add-product-dialog";
+import { StatCard } from "@/components/shared/stat-card";
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,6 +70,11 @@ export default function ProductsPage() {
     );
   }
 
+  const totalProducts = products.length;
+  const activeProducts = products.filter(p => p.isActive).length;
+  const lowStockProducts = products.filter(p => p.availableStock <= p.lowStockThreshold).length;
+  const totalReserved = products.reduce((acc, p) => acc + p.reservedStock, 0);
+
   // Client-side search filtering
   const filteredProducts = products.filter((product) => {
     if (!searchQuery) return true;
@@ -83,12 +89,42 @@ export default function ProductsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-10">
       <PageHeader 
         title="Products" 
         description="Manage dairy products and inventory information."
         action={<AddProductDialog />}
       />
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Products"
+          value={totalProducts}
+          icon={Package}
+        />
+        <StatCard
+          title="Active Products"
+          value={activeProducts}
+          icon={CheckCircle}
+          trend="neutral"
+          trendValue="Currently available"
+        />
+        <StatCard
+          title="Low Stock Items"
+          value={lowStockProducts}
+          icon={AlertCircle}
+          trend={lowStockProducts > 0 ? "down" : "neutral"}
+          trendValue={lowStockProducts > 0 ? "Requires restock" : "Stock healthy"}
+        />
+        <StatCard
+          title="Reserved Items"
+          value={totalReserved}
+          icon={Clock}
+          trend="neutral"
+          trendValue="For pending orders"
+        />
+      </div>
       
       {products.length === 0 ? (
         <EmptyState 

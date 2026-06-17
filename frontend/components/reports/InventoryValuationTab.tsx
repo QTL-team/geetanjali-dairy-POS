@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { IndianRupee, Package } from "lucide-react";
+import { StatCard } from "@/components/shared/stat-card";
 
 export function InventoryValuationTab() {
   const { data: inventory = [], isLoading, error } = useQuery({
@@ -54,28 +55,18 @@ export function InventoryValuationTab() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Total Products in Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{valuationData.filter(d => d.availableStock > 0).length}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Total Inventory Value</CardTitle>
-            <IndianRupee className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              ₹{totalStockValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Based on current selling prices</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Products in Stock"
+          value={valuationData.filter(d => d.availableStock > 0).length}
+          icon={Package}
+        />
+        <StatCard
+          title="Total Inventory Value"
+          value={`₹${totalStockValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+          icon={IndianRupee}
+          trend="neutral"
+          trendValue="Based on current selling prices"
+        />
       </div>
 
       <Card>

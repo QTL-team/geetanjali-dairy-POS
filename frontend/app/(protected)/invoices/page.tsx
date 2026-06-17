@@ -24,6 +24,7 @@ import { getColumns } from "./columns";
 import { InvoiceDialog } from "./components/invoice-dialog";
 import { RecordPaymentDialog } from "./components/record-payment-dialog";
 import api from "@/lib/api/axios";
+import { StatCard } from "@/components/shared/stat-card";
 
 export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,13 +61,13 @@ export default function InvoicesPage() {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader 
-          title="Invoices" 
+          title="Bills" 
           description="Manage billing, track payments, and send reminders."
         />
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            Failed to load invoices. Please try again later.
+            Failed to load bills. Please try again later.
           </AlertDescription>
         </Alert>
       </div>
@@ -98,59 +99,44 @@ export default function InvoicesPage() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <PageHeader 
-        title="Invoices" 
+        title="Bills" 
         description="Manage billing, track payments, and send reminders."
       />
       
       {/* Top Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalInvoices}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Paid Invoices</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{paidInvoices}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingInvoices}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className={outstandingAmount > 0 ? "border-destructive/50" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
-            <CardTitle className="text-sm font-medium">Outstanding Amount</CardTitle>
-            <IndianRupee className={`h-4 w-4 ${outstandingAmount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${outstandingAmount > 0 ? "text-destructive" : ""}`}>
-              ₹{outstandingAmount.toLocaleString('en-IN')}
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Bills"
+          value={totalInvoices}
+          icon={FileText}
+        />
+        <StatCard
+          title="Paid Bills"
+          value={paidInvoices}
+          icon={CheckCircle2}
+          trend="neutral"
+          trendValue="Payments collected"
+        />
+        <StatCard
+          title="Pending Bills"
+          value={pendingInvoices}
+          icon={Clock}
+          trend={pendingInvoices > 0 ? "down" : "neutral"}
+          trendValue="Awaiting payment"
+        />
+        <StatCard
+          title="Outstanding Amount"
+          value={`₹${outstandingAmount.toLocaleString('en-IN')}`}
+          icon={IndianRupee}
+          trend={outstandingAmount > 0 ? "down" : "neutral"}
+          trendValue="Total balance due"
+        />
       </div>
 
       {invoices.length === 0 ? (
         <EmptyState 
-          title="No Invoices Found" 
-          description="Invoices are generated automatically from completed orders."
+          title="No Bills Found" 
+          description="Bills are generated automatically from completed orders."
           icon={<FileText className="h-10 w-10 text-muted-foreground" />}
         />
       ) : (
@@ -160,7 +146,7 @@ export default function InvoicesPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search by invoice #, order # or customer..."
+                placeholder="Search by bill #, order # or customer..."
                 className="pl-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -173,7 +159,7 @@ export default function InvoicesPage() {
             <DataTable 
               columns={columns} 
               data={filteredInvoices} 
-              emptyTitle="No matching invoices"
+              emptyTitle="No matching bills"
               emptyDescription="Try adjusting your search query."
             />
           </div>
@@ -182,7 +168,7 @@ export default function InvoicesPage() {
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {filteredInvoices.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                No matching invoices
+                No matching bills
               </div>
             ) : (
               filteredInvoices.map((invoice) => (

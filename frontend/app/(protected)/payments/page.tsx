@@ -7,7 +7,8 @@ import {
   CreditCard,
   IndianRupee,
   Calendar,
-  Wallet
+  Wallet,
+  MessageSquare
 } from "lucide-react";
 import { isToday, isThisMonth } from "date-fns";
 
@@ -25,10 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import { getPayments } from "@/services/payment.service";
 import { getInvoices } from "@/services/invoice.service";
 import { getDashboardData } from "@/services/dashboard.service";
+import { getOrders } from "@/services/order.service";
 import { getColumns } from "./columns";
 import { PaymentDialog } from "./components/payment-dialog";
 
@@ -37,6 +40,7 @@ export default function PaymentsPage() {
   const [methodFilter, setMethodFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("ALL");
   const [selectedPaymentForView, setSelectedPaymentForView] = useState<string | null>(null);
+  const [pendingPaymentsDialogOpen, setPendingPaymentsDialogOpen] = useState(false);
 
   const { 
     data: payments, 
@@ -55,6 +59,11 @@ export default function PaymentsPage() {
   const { data: dashboard } = useQuery({
     queryKey: ["dashboard"],
     queryFn: getDashboardData,
+  });
+
+  const { data: orders } = useQuery({
+    queryKey: ["orders"],
+    queryFn: getOrders,
   });
 
   if (isLoadingPayments) {
@@ -130,6 +139,34 @@ export default function PaymentsPage() {
     return true;
   });
 
+  // Calculate combined pending items (invoices + uninvoiced orders)
+  const pendingItems = [
+    ...(invoices || [])
+      .filter(inv => inv.balanceAmount > 0 && inv.status !== 'PAID')
+      .map(inv => ({
+        id: `inv-${inv.id}`,
+        customerName: inv.customer.name,
+        customerPhone: inv.customer.phone,
+        reference: `Invoice #${inv.invoiceNumber}`,
+        amount: inv.amount,
+        paidAmount: inv.paidAmount,
+        balanceAmount: inv.balanceAmount,
+        type: "INVOICE"
+      })),
+    ...(orders || [])
+      .filter(ord => ord.paymentStatus !== 'PAID' && ord.status !== 'CANCELLED' && !ord.invoice)
+      .map(ord => ({
+        id: `ord-${ord.id}`,
+        customerName: ord.customer?.name || "Unknown",
+        customerPhone: ord.contactNumber || ord.customer?.phone || "",
+        reference: `Order #${ord.orderNumber}`,
+        amount: ord.totalAmount,
+        paidAmount: 0,
+        balanceAmount: ord.totalAmount,
+        type: "ORDER"
+      }))
+  ];
+
   const columns = getColumns({
     onView: (payment) => setSelectedPaymentForView(payment.id),
   });
@@ -173,7 +210,10 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
         
-        <Card className={outstandingAmount > 0 ? "border-destructive/50" : ""}>
+        <Card 
+          className={`transition-colors ${outstandingAmount > 0 ? "border-destructive/50 cursor-pointer hover:bg-muted/50" : ""}`}
+          onClick={() => { if(outstandingAmount > 0) setPendingPaymentsDialogOpen(true); }}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2 border-none">
             <CardTitle className="text-sm font-medium">Outstanding Amount</CardTitle>
             <IndianRupee className={`h-4 w-4 ${outstandingAmount > 0 ? "text-destructive" : "text-muted-foreground"}`} />
@@ -297,12 +337,55 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Dialog */}
       <PaymentDialog 
         paymentId={selectedPaymentForView} 
         open={!!selectedPaymentForView} 
         onOpenChange={(open) => !open && setSelectedPaymentForView(null)} 
       />
+
+      <Dialog open={pendingPaymentsDialogOpen} onOpenChange={setPendingPaymentsDialogOpen}>
+        <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Pending Payments</DialogTitle>
+            <DialogDescription>List of all outstanding invoices awaiting payment.</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2 mt-4 space-y-4">
+            {pendingItems.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg bg-muted/10">No pending payments found.</div>
+            ) : (
+              pendingItems.map(item => (
+                <div key={item.id} className="p-4 border rounded-lg bg-card shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-base sm:text-lg text-foreground">{item.customerName}</h4>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {item.reference} • {item.customerPhone || "No Phone"}
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
+                      <div><span className="text-muted-foreground">Total:</span> ₹{item.amount.toLocaleString('en-IN')}</div>
+                      <div><span className="text-muted-foreground">Paid:</span> <span className="text-emerald-600 font-medium">₹{item.paidAmount.toLocaleString('en-IN')}</span></div>
+                      <div><span className="text-muted-foreground">Pending:</span> <span className="text-destructive font-bold">₹{item.balanceAmount.toLocaleString('en-IN')}</span></div>
+                    </div>
+                  </div>
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full sm:w-auto bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 hover:text-[#25D366] border-[#25D366]/30"
+                      onClick={() => {
+                        const msg = `Hello ${item.customerName},%0A%0AThis is a reminder from Geetanjali Dairy.%0AYour payment of ₹${item.balanceAmount} for ${item.reference} is currently pending.%0A%0APlease arrange the payment at your earliest convenience.%0A%0AThank you!`;
+                        window.open(`https://wa.me/91${item.customerPhone.replace(/\\D/g, '')}?text=${msg}`, "_blank");
+                      }}
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      WhatsApp Reminder
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

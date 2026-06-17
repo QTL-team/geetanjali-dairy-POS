@@ -9,7 +9,7 @@ export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "name",
     header: "Product Name",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+    cell: ({ row }) => <div className="text-base md:text-lg font-semibold text-foreground">{row.getValue("name")}</div>,
   },
   {
     accessorKey: "gujaratiName",
@@ -39,7 +39,7 @@ export const columns: ColumnDef<Product>[] = [
         style: "currency",
         currency: "INR",
       }).format(price);
-      return <div>{formatted}</div>;
+      return <div className="text-lg font-bold tabular-nums text-foreground">{formatted}</div>;
     },
   },
   {
@@ -55,9 +55,10 @@ export const columns: ColumnDef<Product>[] = [
         <div className="flex items-center gap-2">
           <span>{stock}</span>
           {isLowStock && (
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 font-medium">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">
+              <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
               Low Stock
-            </Badge>
+            </span>
           )}
         </div>
       );
@@ -77,15 +78,9 @@ export const columns: ColumnDef<Product>[] = [
     cell: ({ row }) => {
       const isActive = row.getValue("isActive") as boolean;
       return (
-        <Badge 
-          variant="outline" 
-          className={isActive 
-            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium"
-            : "bg-muted text-muted-foreground font-medium"
-          }
-        >
+        <StatusBadge status={isActive ? "DELIVERED" : "CANCELLED"}>
           {isActive ? "Active" : "Inactive"}
-        </Badge>
+        </StatusBadge>
       );
     },
   },

@@ -23,7 +23,7 @@ const navigation = [
   { name: "Inventory", href: "/inventory", icon: Box },
   { name: "Products", href: "/products", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Bills", href: "/invoices", icon: FileText },
   { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Reports", href: "/reports", icon: BarChart },
 ];
@@ -32,16 +32,16 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="hidden border-r bg-muted/40 md:block w-64 lg:w-72 shrink-0">
-      <div className="flex h-full max-h-screen flex-col gap-2">
+    <div className="hidden border-r border-sidebar-border bg-sidebar md:block w-64 lg:w-72 shrink-0 shadow-sm h-full overflow-y-auto z-10">
+      <div className="flex h-full flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <Package className="h-6 w-6" />
-            <span className="">Geetanjali Dairy</span>
+            <span className="text-lg">Geetanjali Dairy</span>
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-2">
-          <nav className="grid items-start px-2 text-sm font-medium lg:px-4 gap-1">
+          <nav className="grid items-start px-2 text-base font-medium lg:px-4 gap-1">
             {navigation.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
@@ -49,13 +49,16 @@ export function AppSidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+                    "flex items-center gap-3 rounded-md px-3 py-2.5 text-base font-medium transition-all group",
                     isActive
-                      ? "bg-muted text-primary"
-                      : "text-muted-foreground"
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-colors", 
+                    isActive ? "text-primary-foreground" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
+                  )} />
                   {item.name}
                 </Link>
               );
@@ -63,15 +66,20 @@ export function AppSidebar() {
           </nav>
         </div>
         <div className="mt-auto p-4">
-          <nav className="grid items-start text-sm font-medium">
+          <nav className="grid items-start text-base font-medium">
             <Link
               href="/settings"
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary text-muted-foreground",
-                pathname.startsWith("/settings") && "bg-muted text-primary"
+                "flex items-center gap-3 rounded-md px-3 py-2.5 text-base font-medium transition-all group",
+                pathname.startsWith("/settings") 
+                  ? "bg-primary text-primary-foreground shadow-md" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Settings className="h-4 w-4" />
+              <Settings className={cn(
+                "h-5 w-5 transition-colors",
+                pathname.startsWith("/settings") ? "text-primary-foreground" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
+              )} />
               Settings
             </Link>
           </nav>

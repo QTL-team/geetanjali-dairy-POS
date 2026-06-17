@@ -38,19 +38,26 @@ const navigation = [
   { name: "Inventory", href: "/inventory", icon: Box },
   { name: "Products", href: "/products", icon: Package },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Bills", href: "/invoices", icon: FileText },
   { name: "Payments", href: "/payments", icon: CreditCard },
 ];
+
+import { useState, useEffect } from "react";
 
 export function AppNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-      <Sheet>
-        <SheetTrigger render={<Button variant="outline" size="icon" className="shrink-0 md:hidden" />}>
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md pl-4 pr-8 lg:h-[72px] lg:pl-6 lg:pr-12 shadow-sm">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger render={<Button variant="outline" size="icon" className="shrink-0 md:hidden h-11 w-11" />}>
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle navigation menu</span>
         </SheetTrigger>

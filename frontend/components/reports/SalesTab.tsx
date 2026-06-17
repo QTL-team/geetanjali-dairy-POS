@@ -59,26 +59,27 @@ export function SalesTab({ startDate, endDate }: SalesTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full mt-4">
+          <div className="h-[350px] w-full mt-4">
             {data.dailyRevenue.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-muted-foreground border border-dashed rounded-lg">
+              <div className="h-full flex items-center justify-center text-muted-foreground border border-dashed rounded-lg bg-muted/10">
                 No revenue data for this period
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.dailyRevenue} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart data={data.dailyRevenue} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
                   <XAxis 
                     dataKey="date" 
                     tickLine={false} 
                     axisLine={false} 
-                    fontSize={12} 
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    dy={10}
                     tickFormatter={(value) => {
                       const d = new Date(value);
                       return `${d.getDate()}/${d.getMonth()+1}`;
@@ -87,21 +88,33 @@ export function SalesTab({ startDate, endDate }: SalesTabProps) {
                   <YAxis 
                     tickLine={false} 
                     axisLine={false} 
-                    fontSize={12} 
-                    tickFormatter={(value) => `₹${value}`}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    dx={-10}
+                    tickFormatter={(value) => `₹${value.toLocaleString('en-IN')}`}
                   />
                   <Tooltip 
-                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                    labelFormatter={(label) => `Date: ${label}`}
-                    contentStyle={{ borderRadius: '8px' }}
+                    cursor={{ stroke: 'var(--border)', strokeWidth: 2, strokeDasharray: '4 4' }}
+                    contentStyle={{ 
+                      backgroundColor: 'var(--background)', 
+                      borderRadius: '12px',
+                      border: '1px solid var(--border)',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+                    }}
+                    itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                    labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '4px' }}
+                    formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
+                    labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="amount" 
-                    stroke="hsl(var(--primary))" 
+                    stroke="#10b981" 
                     strokeWidth={3}
                     fillOpacity={1} 
                     fill="url(#colorAmount)" 
+                    animationDuration={1500}
+                    animationEasing="ease-out"
+                    activeDot={{ r: 6, fill: '#10b981', stroke: 'var(--background)', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>

@@ -89,3 +89,18 @@ export async function recordPayment(
   const { data } = await api.post(`/invoices/${invoiceId}/payment`, paymentData);
   return data;
 }
+
+export const downloadBillPdf = async (id: string, invoiceNumber: string): Promise<void> => {
+  const response = await api.get(`/invoices/${id}/pdf`, {
+    responseType: "blob",
+  });
+  
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const a = document.createElement("a");
+  a.href = url;
+  a.setAttribute("download", `Bill_${invoiceNumber}.pdf`);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};

@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { InvoiceSummary } from "@/services/invoice.service";
+import { InvoiceSummary, downloadBillPdf } from "@/services/invoice.service";
 import { format } from "date-fns";
 import { MoreHorizontal, Eye, Download, Send, Bell, IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,40 +23,40 @@ interface ColumnActions {
 export const getColumns = (actions: ColumnActions): ColumnDef<InvoiceSummary>[] => [
   {
     accessorKey: "invoiceNumber",
-    header: "Invoice #",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("invoiceNumber")}</div>,
+    header: "Bill #",
+    cell: ({ row }) => <div className="text-base font-medium text-muted-foreground">{row.getValue("invoiceNumber")}</div>,
   },
   {
     accessorKey: "order.orderNumber",
     header: "Order #",
-    cell: ({ row }) => <div>{row.original.order.orderNumber}</div>,
+    cell: ({ row }) => <div className="text-base font-medium text-muted-foreground">{row.original.order.orderNumber}</div>,
   },
   {
     accessorKey: "customer",
     header: "Customer",
     cell: ({ row }) => (
       <div className="flex flex-col">
-        <span className="font-medium">{row.original.customer.name}</span>
-        <span className="text-xs text-muted-foreground">{row.original.customer.phone}</span>
+        <span className="text-base md:text-lg font-semibold text-foreground">{row.original.customer.name}</span>
+        <span className="text-base text-muted-foreground">{row.original.customer.phone}</span>
       </div>
     ),
   },
   {
     accessorKey: "amount",
     header: "Amount",
-    cell: ({ row }) => <div className="font-medium">₹{row.getValue("amount")}</div>,
+    cell: ({ row }) => <div className="text-lg font-bold tabular-nums text-foreground">₹{row.getValue("amount")}</div>,
   },
   {
     accessorKey: "paidAmount",
     header: "Paid",
-    cell: ({ row }) => <div className="text-emerald-600">₹{row.getValue("paidAmount")}</div>,
+    cell: ({ row }) => <div className="text-lg font-bold tabular-nums text-emerald-600">₹{row.getValue("paidAmount")}</div>,
   },
   {
     accessorKey: "balanceAmount",
     header: "Balance",
     cell: ({ row }) => {
       const balance = row.getValue("balanceAmount") as number;
-      return <div className={balance > 0 ? "text-destructive font-medium" : ""}>₹{balance}</div>;
+      return <div className={`text-lg font-bold tabular-nums ${balance > 0 ? "text-destructive" : "text-foreground"}`}>₹{balance}</div>;
     },
   },
   {
@@ -80,10 +80,12 @@ export const getColumns = (actions: ColumnActions): ColumnDef<InvoiceSummary>[] 
     cell: ({ row }) => {
       const invoice = row.original;
 
-      const handleDownloadPdf = () => {
-        window.open(`http://localhost:3000/api/invoices/${invoice.id}/pdf`, '_blank'); // Assuming API is at /api or we just open the backend URL directly.
-        // Wait, the backend URL is usually different. Let's use the API base url.
-        window.open(`${api.defaults.baseURL}/invoices/${invoice.id}/pdf`, '_blank');
+      const handleDownloadPdf = async () => {
+        try {
+          await downloadBillPdf(invoice.id, invoice.invoiceNumber);
+        } catch (error) {
+          console.error("Failed to download PDF", error);
+        }
       };
 
       const handleSendInvoice = async () => {
@@ -116,7 +118,7 @@ export const getColumns = (actions: ColumnActions): ColumnDef<InvoiceSummary>[] 
             
             <DropdownMenuItem onClick={handleSendInvoice}>
               <Send className="mr-2 h-4 w-4" />
-              Send Invoice (WhatsApp)
+              Send Bill (WhatsApp)
             </DropdownMenuItem>
             {invoice.balanceAmount > 0 && (
               <DropdownMenuItem onClick={handlePaymentReminder}>

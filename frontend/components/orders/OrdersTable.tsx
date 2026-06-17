@@ -14,6 +14,8 @@ import { StatusBadge } from "./StatusBadge";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { ViewOrderDialog } from "./ViewOrderDialog";
 import { RecordPaymentDialog } from "./RecordPaymentDialog";
+import { generateInvoice, downloadBillPdf } from "@/services/invoice.service";
+import api from "@/lib/api/axios";
 
 export type SortColumn = "orderNumber" | "customerName" | "phoneNumber" | "deliveryDate" | "totalAmount" | "status" | "createdAt";
 export type SortDirection = "asc" | "desc";
@@ -54,6 +56,17 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     onError: () => toast.error("Failed to cancel order")
   });
 
+  const generateBillMutation = useMutation({
+    mutationFn: generateInvoice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("Bill generated successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to generate bill");
+    }
+  });
+
   const handleStatusUpdate = (id: string, status: OrderStatus) => {
     statusMutation.mutate({ id, status });
   };
@@ -81,6 +94,29 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       toast.success("Worker slip downloaded successfully");
     } catch (error) {
       toast.error("Failed to download worker slip");
+    }
+  };
+
+  const handleGenerateBill = (id: string) => {
+    generateBillMutation.mutate(id);
+  };
+
+  const handleDownloadBillPdf = async (invoiceId: string, invoiceNumber: string) => {
+    try {
+      toast.info("Downloading bill PDF...");
+      await downloadBillPdf(invoiceId, invoiceNumber);
+      toast.success("Bill PDF downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to download bill PDF");
+    }
+  };
+
+  const handleWhatsAppBill = async (invoiceId: string) => {
+    try {
+      const { data } = await api.get(`/invoices/${invoiceId}/share`);
+      window.open(data.whatsappUrl, '_blank');
+    } catch (error) {
+      toast.error("Failed to send bill via WhatsApp");
     }
   };
 
@@ -126,6 +162,99 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     return sortDirection === "asc" ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />;
   };
 
+  const renderOrderActions = (order: Order) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={
+        <Button variant="outline" className="h-8 w-8 p-0 rounded-lg">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      } />
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => { setSelectedOrder(order); setViewDialogOpen(true); }}>
+            <Eye className="mr-2 h-4 w-4" /> View Details
+          </DropdownMenuItem>
+          {(order.status === "DELIVERED" || order.status === "OUT_FOR_DELIVERY") && order.paymentStatus !== "PAID" && (
+            <DropdownMenuItem onClick={() => { setSelectedOrder(order); setPaymentDialogOpen(true); }}>
+              <CheckCircle className="mr-2 h-4 w-4" /> Record Payment
+            </DropdownMenuItem>
+          )}
+
+          {order.status === "DELIVERED" && !order.invoice && (
+            <DropdownMenuItem onClick={() => handleGenerateBill(order.id)}>
+              <FileText className="mr-2 h-4 w-4" /> Generate Bill
+            </DropdownMenuItem>
+          )}
+
+          {order.invoice && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <FileText className="mr-2 h-4 w-4" /> Bill Actions
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => window.open(`/invoices`, '_self')}>
+                  <Eye className="mr-2 h-4 w-4" /> View Bills
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadBillPdf(order.invoice!.id, order.invoice!.invoiceNumber || 'Draft')}>
+                  <FileText className="mr-2 h-4 w-4" /> Download Bill PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleWhatsAppBill(order.invoice!.id)}>
+                  <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp Bill
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        
+        {order.status !== "CANCELLED" && (
+          <>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "PENDING")}>
+                  <Clock className="mr-2 h-4 w-4" /> Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "PREPARING")}>
+                  <Package className="mr-2 h-4 w-4" /> Preparing
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "READY")}>
+                  <Check className="mr-2 h-4 w-4" /> Ready
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "OUT_FOR_DELIVERY")}>
+                  <Truck className="mr-2 h-4 w-4" /> Out for Delivery
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "DELIVERED")}>
+                  <CheckCircle className="mr-2 h-4 w-4" /> Delivered
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            
+            <DropdownMenuItem onClick={() => handleWorkerSlip(order.id, order.orderNumber)}>
+              <FileText className="mr-2 h-4 w-4" /> Print Worker Slip
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem onClick={() => handleWhatsApp(order.id)}>
+              <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp Delivery
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => handleCancel(order.id)}
+              className="text-red-600 focus:text-red-600"
+            >
+              <Ban className="mr-2 h-4 w-4" /> Cancel Order
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   if (orders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 border rounded-lg bg-muted/20 text-center">
@@ -138,8 +267,9 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
   return (
     <>
-      <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      <div className="rounded-xl border bg-card overflow-hidden shadow-sm flex flex-col">
+        {/* Desktop Table View */}
+        <div className="overflow-x-auto hidden lg:block">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
@@ -175,12 +305,12 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 
                 return (
                   <TableRow key={order.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-medium text-muted-foreground">{order.orderNumber}</TableCell>
+                    <TableCell className="text-base font-medium text-muted-foreground">{order.orderNumber}</TableCell>
                     <TableCell>
-                      <span className="font-semibold">{order.customer?.name || "Unknown"}</span>
+                      <span className="text-base md:text-lg font-semibold text-foreground">{order.customer?.name || "Unknown"}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">{order.contactNumber || order.customer?.phone || "-"}</span>
+                      <span className="text-base text-muted-foreground">{order.contactNumber || order.customer?.phone || "-"}</span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -188,12 +318,25 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         <span className="text-xs text-muted-foreground">{deliveryD.toLocaleDateString("en-GB", { weekday: "short" })}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-semibold">₹{(order.totalAmount || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-lg font-bold tabular-nums text-foreground">₹{(order.totalAmount || 0).toFixed(2)}</TableCell>
                     <TableCell>
                       <StatusBadge status={order.status} />
                     </TableCell>
                     <TableCell>
-                      <PaymentStatusBadge status={order.paymentStatus} />
+                      <div className="flex flex-col gap-1 items-start">
+                        <PaymentStatusBadge status={order.paymentStatus} />
+                        {order.paymentStatus !== "PAID" && order.status !== "CANCELLED" && (
+                          <div className="flex flex-col text-xs mt-1.5 gap-0.5 bg-muted/20 p-1.5 rounded-md border border-border/50">
+                            <span className="text-muted-foreground">Total: ₹{(order.totalAmount || 0).toFixed(2)}</span>
+                            <span className="text-emerald-600 font-medium">
+                              Paid: ₹{(order.invoice ? order.invoice.paidAmount : (order.paymentStatus === "PARTIAL" ? 0 : 0)).toFixed(2)}
+                            </span>
+                            <span className="font-medium text-destructive">
+                              Pending: ₹{(order.invoice ? order.invoice.balanceAmount : order.totalAmount).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -202,77 +345,67 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={
-                          <Button variant="outline" className="h-8 w-8 p-0 rounded-lg">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        } />
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuGroup>
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => { setSelectedOrder(order); setViewDialogOpen(true); }}>
-                              <Eye className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                            {(order.status === "DELIVERED" || order.status === "OUT_FOR_DELIVERY") && order.paymentStatus !== "PAID" && (
-                              <DropdownMenuItem onClick={() => { setSelectedOrder(order); setPaymentDialogOpen(true); }}>
-                                <CheckCircle className="mr-2 h-4 w-4" /> Record Payment
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuGroup>
-                          <DropdownMenuSeparator />
-                          
-                          {order.status !== "CANCELLED" && (
-                            <>
-                              <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                  <CheckCircle className="mr-2 h-4 w-4" /> Update Status
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "PENDING")}>
-                                    <Clock className="mr-2 h-4 w-4" /> Pending
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "PREPARING")}>
-                                    <Package className="mr-2 h-4 w-4" /> Preparing
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "READY")}>
-                                    <Check className="mr-2 h-4 w-4" /> Ready
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "OUT_FOR_DELIVERY")}>
-                                    <Truck className="mr-2 h-4 w-4" /> Out for Delivery
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(order.id, "DELIVERED")}>
-                                    <CheckCircle className="mr-2 h-4 w-4" /> Delivered
-                                  </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-                              
-                              <DropdownMenuItem onClick={() => handleWorkerSlip(order.id, order.orderNumber)}>
-                                <FileText className="mr-2 h-4 w-4" /> Print Worker Slip
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem onClick={() => handleWhatsApp(order.id)}>
-                                <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp Delivery
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleCancel(order.id)}
-                                className="text-red-600 focus:text-red-600"
-                              >
-                                <Ban className="mr-2 h-4 w-4" /> Cancel Order
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {renderOrderActions(order)}
                     </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="grid grid-cols-1 gap-4 p-4 lg:hidden bg-muted/10">
+          {paginatedOrders.map((order) => {
+            const deliveryD = new Date(order.deliveryDate);
+            const createdD = new Date(order.createdAt);
+            
+            return (
+              <div key={order.id} className="bg-card border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-base font-semibold text-foreground">{order.customer?.name || "Unknown"}</h4>
+                    <p className="text-sm font-medium text-muted-foreground">{order.orderNumber}</p>
+                  </div>
+                  {renderOrderActions(order)}
+                </div>
+                
+                <div className="flex flex-wrap gap-2 items-start">
+                  <StatusBadge status={order.status} />
+                  <div className="flex flex-col">
+                    <PaymentStatusBadge status={order.paymentStatus} />
+                    {order.paymentStatus !== "PAID" && order.status !== "CANCELLED" && (
+                      <div className="flex flex-col text-xs mt-1.5 gap-0.5 bg-muted/20 p-1.5 rounded-md border border-border/50">
+                        <span className="text-muted-foreground">Total: ₹{(order.totalAmount || 0).toFixed(2)}</span>
+                        <span className="text-emerald-600 font-medium">
+                          Paid: ₹{(order.invoice ? order.invoice.paidAmount : (order.paymentStatus === "PARTIAL" ? 0 : 0)).toFixed(2)}
+                        </span>
+                        <span className="font-medium text-destructive">
+                          Pending: ₹{(order.invoice ? order.invoice.balanceAmount : order.totalAmount).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm mt-1">
+                  <div className="flex flex-col">
+                    <span className="text-muted-foreground">Phone</span>
+                    <span className="font-medium">{order.contactNumber || order.customer?.phone || "-"}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-muted-foreground">Delivery</span>
+                    <span className="font-medium">{deliveryD.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  </div>
+                </div>
+                
+                <div className="pt-3 mt-1 border-t flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm font-medium">Total Amount</span>
+                  <span className="text-lg font-bold tabular-nums text-foreground">₹{(order.totalAmount || 0).toFixed(2)}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
         
         {/* Pagination Footer */}

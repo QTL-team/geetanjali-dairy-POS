@@ -29,7 +29,7 @@ export function InvoiceDialog({ invoiceId, open, onOpenChange }: InvoiceDialogPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Invoice Details</DialogTitle>
+          <DialogTitle>Bill Details</DialogTitle>
         </DialogHeader>
 
         {isLoading || !invoice ? (
@@ -118,31 +118,55 @@ export function InvoiceDialog({ invoiceId, open, onOpenChange }: InvoiceDialogPr
               </div>
             </div>
 
-            {/* Payment History */}
+            {/* Payment History Timeline */}
             {invoice.payments.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-3">Payment History</h3>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-medium">Date</th>
-                        <th className="px-4 py-2 text-left font-medium">Method</th>
-                        <th className="px-4 py-2 text-right font-medium">Amount</th>
-                        <th className="px-4 py-2 text-left font-medium">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoice.payments.map((payment) => (
-                        <tr key={payment.id} className="border-t">
-                          <td className="px-4 py-3">{format(new Date(payment.paidAt), "MMM d, yyyy HH:mm")}</td>
-                          <td className="px-4 py-3">{payment.method}</td>
-                          <td className="px-4 py-3 text-right font-medium text-emerald-600">₹{payment.amount}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{payment.notes || "-"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <h3 className="text-lg font-semibold mb-4">Payment Timeline</h3>
+                <div className="relative border-l-2 border-muted pl-6 ml-3 space-y-6">
+                  {invoice.payments.map((payment, idx) => (
+                    <div key={payment.id} className="relative">
+                      {/* Timeline dot */}
+                      <span className="absolute -left-[31px] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-4 ring-background" />
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 p-4 bg-card rounded-lg border shadow-sm">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-emerald-600">+ ₹{payment.amount.toLocaleString('en-IN')}</span>
+                            <Badge variant="outline" className="bg-muted text-muted-foreground">{payment.method}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(payment.paidAt), "MMM d, yyyy 'at' h:mm a")}
+                          </p>
+                          {payment.notes && (
+                            <p className="text-sm mt-2 p-2 bg-muted/30 rounded-md border border-border/50">
+                              {payment.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {invoice.balanceAmount > 0 && (
+                    <div className="relative">
+                      <span className="absolute -left-[31px] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 ring-4 ring-background" />
+                      <div className="p-4 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                        <p className="text-sm font-medium text-amber-700 dark:text-amber-500">
+                          Pending Balance: ₹{invoice.balanceAmount.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {invoice.balanceAmount === 0 && (
+                     <div className="relative">
+                     <span className="absolute -left-[31px] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 ring-4 ring-background" />
+                     <div className="p-4 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                       <p className="text-sm font-medium text-blue-700 dark:text-blue-500">
+                         Bill Fully Paid
+                       </p>
+                     </div>
+                   </div>
+                  )}
                 </div>
               </div>
             )}

@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DataTable } from "@/components/shared/data-table";
+import { StatCard } from "@/components/shared/stat-card";
+import { Package, IndianRupee, RefreshCcw } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface ReturnsTabProps {
@@ -49,32 +51,25 @@ export function ReturnsTab({ startDate, endDate }: ReturnsTabProps) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Returned Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.totalReturnedQty}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Value of Returned Goods</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">₹{data.totalReturnValue.toLocaleString('en-IN')}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Returned Stock Value</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">₹{data.totalReturnedStockValue.toLocaleString('en-IN')}</div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Returned Items"
+          value={data.totalReturnedQty}
+          icon={Package}
+        />
+        <StatCard
+          title="Value of Returned Goods"
+          value={`₹${data.totalReturnValue.toLocaleString('en-IN')}`}
+          icon={IndianRupee}
+          trend={data.totalReturnValue > 0 ? "down" : "neutral"}
+          trendValue="Impacts revenue"
+        />
+        <StatCard
+          title="Returned Stock Value"
+          value={`₹${data.totalReturnedStockValue.toLocaleString('en-IN')}`}
+          icon={RefreshCcw}
+          trend="neutral"
+          trendValue="Recouped inventory value"
+        />
       </div>
 
       <Card>
@@ -86,6 +81,24 @@ export function ReturnsTab({ startDate, endDate }: ReturnsTabProps) {
           <DataTable 
             columns={columns} 
             data={data.topReturnedProducts} 
+            emptyTitle="No returns"
+            emptyDescription="No products were returned in the selected date range."
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer-wise Returns</CardTitle>
+          <CardDescription>Customers with the highest return volumes.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DataTable 
+            columns={[
+              { accessorKey: "name", header: "Customer Name" },
+              { accessorKey: "totalReturned", header: "Quantity Returned" }
+            ]} 
+            data={data.customerWiseReturns || []} 
             emptyTitle="No returns"
             emptyDescription="No products were returned in the selected date range."
           />

@@ -14,11 +14,11 @@ import {
 } from "lucide-react";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { CustomerStats, getCustomerDetails } from "@/services/customer.service";
-import Link from "next/link";
 
 interface CustomerDialogProps {
   customer: CustomerStats | null;
@@ -49,13 +48,13 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="p-6 pb-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-md md:max-w-xl w-[90vw] flex flex-col p-0 border-l border-border/50">
+        <SheetHeader className="p-6 pb-4 bg-muted/20 shrink-0">
           <div className="flex justify-between items-start">
-            <DialogTitle className="text-2xl font-bold">{customer.name}</DialogTitle>
+            <SheetTitle className="text-2xl font-bold tracking-tight">{customer.name}</SheetTitle>
           </div>
-          <div className="flex flex-wrap gap-3 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4">
             <Button variant="outline" size="sm" onClick={() => window.location.href = `tel:${customer.phone}`}>
               <Phone className="mr-2 h-4 w-4" />
               Call
@@ -66,19 +65,19 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.location.href = `/orders?customerId=${customer.id}`}>
               <ShoppingBag className="mr-2 h-4 w-4" />
-              View All Orders
+              Orders
             </Button>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
         <Separator />
 
         <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
-          <div className="px-6 py-2">
+          <div className="px-6 py-2 shrink-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="orders">Orders History</TabsTrigger>
-              <TabsTrigger value="financials">Invoices & Payments</TabsTrigger>
+              <TabsTrigger value="orders">Orders</TabsTrigger>
+              <TabsTrigger value="financials">Bills</TabsTrigger>
             </TabsList>
           </div>
 
@@ -93,27 +92,27 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
                 <>
                   <TabsContent value="overview" className="space-y-6 mt-0">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg">
-                        <div className="flex items-center text-muted-foreground text-sm">
-                          <Phone className="h-4 w-4 mr-2" /> Phone
+                      <div className="flex flex-col gap-1 p-4 bg-muted/30 border border-border/50 rounded-lg">
+                        <div className="flex items-center text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">
+                          <Phone className="h-3 w-3 mr-1.5" /> Phone
                         </div>
                         <div className="font-medium">{details.phone}</div>
                       </div>
-                      <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg">
-                        <div className="flex items-center text-muted-foreground text-sm">
-                          <MapPin className="h-4 w-4 mr-2" /> Address
+                      <div className="flex flex-col gap-1 p-4 bg-muted/30 border border-border/50 rounded-lg">
+                        <div className="flex items-center text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">
+                          <MapPin className="h-3 w-3 mr-1.5" /> Address
                         </div>
-                        <div className="font-medium">{details.address || "No address provided"}</div>
+                        <div className="font-medium line-clamp-2" title={details.address || undefined}>{details.address || "-"}</div>
                       </div>
-                      <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg">
-                        <div className="flex items-center text-muted-foreground text-sm">
-                          <CalendarIcon className="h-4 w-4 mr-2" /> Member Since
+                      <div className="flex flex-col gap-1 p-4 bg-muted/30 border border-border/50 rounded-lg">
+                        <div className="flex items-center text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">
+                          <CalendarIcon className="h-3 w-3 mr-1.5" /> Member Since
                         </div>
-                        <div className="font-medium">{format(new Date(details.createdAt), "MMMM d, yyyy")}</div>
+                        <div className="font-medium">{format(new Date(details.createdAt), "MMM d, yyyy")}</div>
                       </div>
-                      <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg">
-                        <div className="flex items-center text-muted-foreground text-sm">
-                          <IndianRupee className="h-4 w-4 mr-2" /> Total Outstanding
+                      <div className="flex flex-col gap-1 p-4 bg-muted/30 border border-border/50 rounded-lg">
+                        <div className="flex items-center text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">
+                          <IndianRupee className="h-3 w-3 mr-1.5" /> Outstanding
                         </div>
                         <div className={`font-bold ${customer.pendingAmount > 0 ? "text-destructive" : "text-emerald-600"}`}>
                           ₹{customer.pendingAmount.toLocaleString('en-IN')}
@@ -122,8 +121,8 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
                     </div>
 
                     {details.notes && (
-                      <div className="p-4 border rounded-lg">
-                        <h4 className="font-medium text-sm text-muted-foreground mb-2">Customer Notes</h4>
+                      <div className="p-4 border border-border/50 bg-card rounded-lg">
+                        <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-2">Customer Notes</h4>
                         <p className="text-sm">{details.notes}</p>
                       </div>
                     )}
@@ -131,32 +130,32 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
 
                   <TabsContent value="orders" className="mt-0">
                     {details.orders.length === 0 ? (
-                      <div className="text-center py-10 text-muted-foreground border rounded-lg">
+                      <div className="text-center py-10 text-muted-foreground border rounded-lg bg-muted/10">
                         No orders found for this customer.
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {details.orders.map((order) => (
-                          <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-3">
+                          <div key={order.id} className="p-4 border rounded-lg flex flex-col gap-3 bg-card hover:bg-muted/30 transition-colors">
                             <div className="flex justify-between items-center">
                               <div className="font-medium flex items-center gap-2">
-                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                                <ShoppingBag className="h-4 w-4 text-primary/70" />
                                 {order.orderNumber}
                               </div>
-                              <Badge variant="outline">{order.status}</Badge>
+                              <Badge variant="outline" className="bg-background">{order.status}</Badge>
                             </div>
                             <div className="flex justify-between items-end text-sm text-muted-foreground">
                               <div>
-                                Delivered: {format(new Date(order.deliveryDate), "MMM d, yyyy")}
+                                {format(new Date(order.deliveryDate), "MMM d, yyyy")}
                               </div>
-                              <div className="font-semibold text-foreground">
+                              <div className="font-semibold text-foreground text-base">
                                 ₹{order.totalAmount.toLocaleString('en-IN')}
                               </div>
                             </div>
-                            <div className="text-xs bg-muted/50 p-2 rounded flex flex-wrap gap-2">
+                            <div className="text-xs bg-muted/50 p-2 rounded-md flex flex-wrap gap-2">
                               {order.items.map(item => (
-                                <span key={item.id} className="bg-background px-2 py-1 rounded border">
-                                  {item.product.name} x {item.quantity} {item.product.unit.toLowerCase()}
+                                <span key={item.id} className="bg-background px-2 py-1 rounded shadow-sm border border-border/50 font-medium">
+                                  {item.product.name} × {item.quantity} {item.product.unit.toLowerCase()}
                                 </span>
                               ))}
                             </div>
@@ -169,16 +168,16 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
                   <TabsContent value="financials" className="mt-0">
                     <div className="space-y-6">
                       {details.orders.filter(o => o.invoice).length === 0 ? (
-                         <div className="text-center py-10 text-muted-foreground border rounded-lg">
-                           No invoices generated for this customer.
+                         <div className="text-center py-10 text-muted-foreground border rounded-lg bg-muted/10">
+                           No bills generated for this customer.
                          </div>
                       ) : (
                         details.orders.filter(o => o.invoice).map((order) => {
                           const invoice = order.invoice!;
                           return (
-                            <div key={invoice.id} className="p-4 border rounded-lg space-y-4">
+                            <div key={invoice.id} className="p-5 border rounded-lg space-y-4 bg-card">
                               <div className="flex justify-between items-center pb-3 border-b">
-                                <div className="flex items-center gap-2 font-medium">
+                                <div className="flex items-center gap-2 font-semibold">
                                   <FileText className="h-4 w-4 text-blue-500" />
                                   {invoice.invoiceNumber}
                                 </div>
@@ -190,35 +189,35 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
                                 </Badge>
                               </div>
 
-                              <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div className="grid grid-cols-3 gap-4 text-sm bg-muted/20 p-3 rounded-md">
                                 <div>
-                                  <div className="text-muted-foreground text-xs mb-1">Total Amount</div>
-                                  <div className="font-semibold">₹{invoice.amount.toLocaleString('en-IN')}</div>
+                                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Total</div>
+                                  <div className="font-semibold text-base">₹{invoice.amount.toLocaleString('en-IN')}</div>
                                 </div>
                                 <div>
-                                  <div className="text-muted-foreground text-xs mb-1">Paid Amount</div>
-                                  <div className="font-semibold text-emerald-600">₹{invoice.paidAmount.toLocaleString('en-IN')}</div>
+                                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Paid</div>
+                                  <div className="font-semibold text-emerald-600 text-base">₹{invoice.paidAmount.toLocaleString('en-IN')}</div>
                                 </div>
                                 <div>
-                                  <div className="text-muted-foreground text-xs mb-1">Balance</div>
-                                  <div className={`font-semibold ${invoice.balanceAmount > 0 ? "text-destructive" : ""}`}>
+                                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Balance</div>
+                                  <div className={`font-semibold text-base ${invoice.balanceAmount > 0 ? "text-destructive" : ""}`}>
                                     ₹{invoice.balanceAmount.toLocaleString('en-IN')}
                                   </div>
                                 </div>
                               </div>
 
                               {invoice.payments && invoice.payments.length > 0 && (
-                                <div className="mt-4 pt-4 border-t bg-muted/10 -mx-4 px-4 pb-1">
-                                  <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-1">
+                                <div className="mt-4 pt-4 border-t border-dashed">
+                                  <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-1.5">
                                     <CreditCard className="h-3 w-3" /> Payment History
                                   </h4>
                                   <div className="space-y-2">
                                     {invoice.payments.map(payment => (
-                                      <div key={payment.id} className="flex justify-between items-center text-sm py-1">
+                                      <div key={payment.id} className="flex justify-between items-center text-sm py-1.5 px-3 bg-muted/30 rounded-md">
                                         <div className="text-muted-foreground">
-                                          {format(new Date(payment.paidAt), "MMM d, yyyy")} • {payment.method}
+                                          {format(new Date(payment.paidAt), "MMM d, yyyy")} <span className="opacity-50 mx-1">•</span> {payment.method}
                                         </div>
-                                        <div className="font-medium text-emerald-600">
+                                        <div className="font-semibold text-emerald-600">
                                           + ₹{payment.amount.toLocaleString('en-IN')}
                                         </div>
                                       </div>
@@ -237,7 +236,7 @@ export function CustomerDialog({ customer, open, onOpenChange }: CustomerDialogP
             </div>
           </ScrollArea>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
