@@ -68,6 +68,16 @@ export class OrdersController {
     return this.ordersService.generateWorkerSlipPdf(id, res);
   }
 
+  @Get(':id/delivery-slip')
+  getDeliverySlip(@Param('id') id: string) {
+    return this.ordersService.getDeliverySlip(id);
+  }
+
+  @Get(':id/delivery-slip/pdf')
+  generateDeliverySlipPdf(@Param('id') id: string, @Res() res: Response) {
+    return this.ordersService.generateDeliverySlipPdf(id, res);
+  }
+
   @Post(':id/payment')
   recordPayment(
     @Param('id') id: string,

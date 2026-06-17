@@ -292,12 +292,10 @@ Geetanjali Dairy`;
       where: {
         id: invoiceId,
       },
-
       include: {
         order: {
           include: {
             customer: true,
-
             items: {
               include: {
                 product: true,
@@ -314,10 +312,10 @@ Geetanjali Dairy`;
 
     const doc = new PDFDocument({
       margin: 50,
+      size: 'A4',
     });
 
     res.setHeader('Content-Type', 'application/pdf');
-
     res.setHeader(
       'Content-Disposition',
       `inline; filename=${invoice.invoiceNumber}.pdf`,
@@ -325,83 +323,83 @@ Geetanjali Dairy`;
 
     doc.pipe(res);
 
-    doc.fontSize(22);
+    doc.registerFont('Gujarati', './fonts/NotoSansGujarati-Regular.ttf');
+    doc.font('Gujarati');
 
     // Header
-
-    doc.fontSize(24).text('GEETANJALI DAIRY', {
+    doc.fontSize(24).text('ગીતાંજલિ ડેરી (GEETANJALI DAIRY)', {
       align: 'center',
     });
 
-    doc.fontSize(12).text('Fresh Dairy Products', {
+    doc.fontSize(12).text('તાજા ડેરી પ્રોડક્ટ્સ (Fresh Dairy Products)', {
       align: 'center',
     });
 
     doc.moveDown(2);
 
     // Invoice Details
-
-    doc.fontSize(16).text('BILL');
+    doc.fontSize(16).text('બિલ (BILL)');
 
     doc.moveDown();
 
-    doc.text(`Bill No: ${invoice.invoiceNumber}`);
+    doc.fontSize(12);
+    doc.text(`બિલ નંબર (Bill No): ${invoice.invoiceNumber}`);
 
-    doc.text(`Generated Date: ${invoice.generatedAt.toLocaleDateString('en-GB')}`);
-    doc.text(`Delivery Date: ${new Date(invoice.order.deliveryDate).toLocaleDateString('en-GB')}`);
+    doc.text(
+      `બિલ તારીખ (Generated Date): ${invoice.generatedAt.toLocaleDateString('en-GB')}`,
+    );
+    doc.text(
+      `ડિલિવરી તારીખ (Delivery Date): ${new Date(invoice.order.deliveryDate).toLocaleDateString('en-GB')}`,
+    );
 
     doc.moveDown();
 
     // Customer Details
-
-    doc.fontSize(14).text('Customer Details');
+    doc.fontSize(14).text('ગ્રાહકની વિગતો (Customer Details)');
 
     doc.moveDown(0.5);
 
-    doc.fontSize(12).text(`Name: ${invoice.order.customer.name}`);
+    doc.fontSize(12).text(`નામ (Name): ${invoice.order.customer.name}`);
 
-    doc.text(`Phone: ${invoice.order.customer.phone}`);
+    doc.text(`ફોન (Phone): ${invoice.order.customer.phone}`);
 
-    doc.text(`Address: ${invoice.order.deliveryAddress}`);
+    doc.text(`સરનામું (Address): ${invoice.order.deliveryAddress}`);
 
     doc.moveDown();
 
     // Divider
-
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
     doc.moveDown();
 
     // Table Header
-
     doc.fontSize(12);
 
     const startY = doc.y;
 
-    doc.text('Product Name', 50, startY);
-    doc.text('Ordered', 200, startY);
-    doc.text('Returned', 260, startY);
-    doc.text('Final Billed', 330, startY);
-    doc.text('Rate', 410, startY);
-    doc.text('Amount', 470, startY);
+    doc.text('પ્રોડક્ટનું નામ', 50, startY);
+    doc.text('ઓર્ડર', 200, startY);
+    doc.text('પરત', 260, startY);
+    doc.text('બિલિંગ', 330, startY);
+    doc.text('ભાવ', 410, startY);
+    doc.text('રકમ', 470, startY);
 
     doc.moveDown();
 
     // Divider
-
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
     doc.moveDown();
 
     // Items
-
     for (const item of invoice.order.items) {
       const y = doc.y;
 
-      doc.text(item.product.name, 50, y);
+      const productName = item.product.gujaratiName ?? item.product.name;
+      doc.text(productName, 50, y);
       doc.text(`${item.quantity}`, 200, y);
       doc.text(`${item.returnedQuantity || 0}`, 260, y);
-      
+
       const billedQty = item.quantity - (item.returnedQuantity || 0);
       doc.text(`${billedQty}`, 330, y);
       doc.text(`₹${item.unitPrice}`, 410, y);
@@ -415,43 +413,55 @@ Geetanjali Dairy`;
     doc.moveDown();
 
     // Divider
-
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
     doc.moveDown(2);
 
     // Totals
-
     doc.fontSize(14);
+    
+    // Reset X coordinate to 50 so that alignment calculations span the full width (595 - 50*2 = 495)
+    doc.x = 50;
 
-    doc.text(`Grand Total: ₹${invoice.amount}`, {
+    doc.text(`કુલ રકમ (Grand Total): ₹${invoice.amount}`, {
       align: 'right',
+      width: 495,
     });
 
-    doc.text(`Paid Amount: ₹${invoice.paidAmount}`, {
+    doc.text(`જમા રકમ (Paid Amount): ₹${invoice.paidAmount}`, {
       align: 'right',
+      width: 495,
     });
 
-    doc.text(`Balance Amount: ₹${invoice.balanceAmount}`, {
+    doc.text(`બાકી રકમ (Balance Amount): ₹${invoice.balanceAmount}`, {
       align: 'right',
+      width: 495,
     });
 
-    doc.text(`Bill Status: ${invoice.status}`, {
+    let gujaratiStatus = invoice.status.toString();
+    if (invoice.status === 'PAID') gujaratiStatus = 'ચૂકવેલ (PAID)';
+    else if (invoice.status === 'PARTIAL') gujaratiStatus = 'અંશતઃ ચૂકવેલ (PARTIAL)';
+    else if (invoice.status === 'SENT') gujaratiStatus = 'મોકલેલ (SENT)';
+    else if (invoice.status === 'DRAFT') gujaratiStatus = 'ડ્રાફ્ટ (DRAFT)';
+
+    doc.text(`બિલની સ્થિતિ (Status): ${gujaratiStatus}`, {
       align: 'right',
+      width: 495,
     });
 
     doc.moveDown(3);
 
     // Footer
-
-    doc.fontSize(12).text('Thank you for choosing Geetanjali Dairy.', {
+    doc.fontSize(12).text('ગીતાંજલિ ડેરી પસંદ કરવા બદલ આભાર.', {
       align: 'center',
+      width: 495,
     });
 
     doc.moveDown();
 
-    doc.text('This is a computer generated bill.', {
+    doc.text('આ કમ્પ્યુટર દ્વારા જનરેટ કરેલ બિલ છે.', {
       align: 'center',
+      width: 495,
     });
 
     doc.end();

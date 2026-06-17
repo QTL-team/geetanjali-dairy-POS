@@ -421,16 +421,150 @@ We look forward to serving you again.`;
       );
     }
 
-    await this.prisma.order.update({
+    doc.end();
+
+    try {
+      await this.prisma.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          workerSlipPrinted: true,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to update workerSlipPrinted status', error);
+    }
+  }
+
+  async getDeliverySlip(orderId: string) {
+    const order = await this.prisma.order.findUnique({
       where: {
         id: orderId,
       },
-      data: {
-        workerSlipPrinted: true,
+      include: {
+        customer: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    return {
+      orderNumber: order.orderNumber,
+      customerName: order.customer.name,
+      phone: order.contactNumber,
+      deliveryAddress: order.deliveryAddress,
+      deliveryDate: order.deliveryDate.toLocaleDateString('en-GB'),
+      notes: order.notes,
+      items: order.items.map((item) => ({
+        productName: item.product.gujaratiName ?? item.product.name,
+        quantity: item.quantity,
+        unit: item.product.unit,
+      })),
+    };
+  }
+
+  async generateDeliverySlipPdf(orderId: string, res: Response) {
+    const order = await this.prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        customer: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+
+    const doc = new PDFDocument({
+      margin: 50,
+      size: 'A4',
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=delivery-slip-${order.orderNumber}.pdf`,
+    );
+
+    doc.pipe(res);
+
+    doc.registerFont('Gujarati', './fonts/NotoSansGujarati-Regular.ttf');
+    doc.font('Gujarati');
+
+    doc.fontSize(20).text('ડિલિવરી સ્લિપ', {
+      align: 'center',
+    });
+
+    doc.moveDown();
+
+    doc.fontSize(12);
+    doc.text(`ઓર્ડર નંબર: ${order.orderNumber}`);
+    doc.text(`ગ્રાહકનું નામ: ${order.customer.name}`);
+    doc.text(`મોબાઇલ નંબર: ${order.contactNumber}`);
+    doc.text(`સરનામું: ${order.deliveryAddress}`);
+    doc.text(
+      `ડિલિવરી તારીખ: ${order.deliveryDate.toLocaleDateString('en-GB')}`,
+    );
+    if (order.notes) {
+      doc.text(`નોંધ: ${order.notes}`);
+    }
+
+    doc.moveDown();
+    doc.text('------------------------------------------------------------');
+    doc.moveDown();
+
+    doc.fontSize(14).text('પ્રોડક્ટ્સ:');
+    doc.moveDown(0.5);
+
+    doc.fontSize(12);
+    const unitMap: Record<string, string> = {
+      KG: 'કિલો',
+      LITER: 'લિટર',
+      PIECE: 'નંગ',
+    };
+
+    for (const item of order.items) {
+      const productName = item.product.gujaratiName ?? item.product.name;
+      const unit = unitMap[item.product.unit] || item.product.unit;
+      doc.text(`- ${productName} - ${item.quantity} ${unit}`);
+    }
+
+    doc.moveDown(3);
+
+    // Calculate position for signatures
+    const startY = doc.y;
+    doc.text('ગ્રાહકની સહી', 50, startY);
+    doc.text('ડિલિવરી બોયની સહી', 400, startY);
+
     doc.end();
+
+    try {
+      await this.prisma.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          deliverySlipPrinted: true,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to update deliverySlipPrinted status', error);
+    }
   }
 
   async recordPayment(

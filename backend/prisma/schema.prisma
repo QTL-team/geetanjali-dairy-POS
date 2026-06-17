@@ -59,24 +59,25 @@ model InventoryTransaction {
 }
 
 model Order {
-  id                String        @id @default(uuid())
-  orderNumber       String        @unique
-  customerId        String
-  deliveryDate      DateTime
-  deliveryAddress   String
-  contactNumber     String
-  notes             String?
-  status            OrderStatus   @default(PENDING)
-  totalAmount       Float         @default(0)
-  paymentStatus     PaymentStatus @default(PENDING)
-  isInvoiced        Boolean       @default(false)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  workerSlipPrinted Boolean       @default(false)
-  invoice           Invoice?
-  customer          Customer      @relation(fields: [customerId], references: [id])
-  items             OrderItem[]
-  returns           OrderReturn[]
+  id                  String        @id @default(uuid())
+  orderNumber         String        @unique
+  customerId          String
+  deliveryDate        DateTime
+  deliveryAddress     String
+  contactNumber       String
+  notes               String?
+  status              OrderStatus   @default(PENDING)
+  totalAmount         Float         @default(0)
+  paymentStatus       PaymentStatus @default(PENDING)
+  isInvoiced          Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  workerSlipPrinted   Boolean       @default(false)
+  deliverySlipPrinted Boolean       @default(false)
+  invoice             Invoice?
+  customer            Customer      @relation(fields: [customerId], references: [id])
+  items               OrderItem[]
+  returns             OrderReturn[]
 }
 
 model OrderItem {
