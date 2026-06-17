@@ -27,6 +27,7 @@ export class CustomersService {
         orders: {
           include: {
             invoice: true,
+            items: true,
           },
         },
       },
@@ -51,7 +52,11 @@ export class CustomersService {
           totalRevenue += order.invoice.paidAmount || 0;
           pendingAmount += order.invoice.balanceAmount || 0;
         } else if (order.status === 'DELIVERED') {
-          pendingAmount += order.totalAmount || 0;
+          const orderAmount = order.items.reduce((sum, item) => {
+            const billedQty = item.quantity - (item.returnedQuantity || 0);
+            return sum + billedQty * item.unitPrice;
+          }, 0);
+          pendingAmount += orderAmount;
         }
       });
 

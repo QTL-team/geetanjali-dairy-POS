@@ -84,9 +84,9 @@ export class InvoicesService {
       throw new BadRequestException('Order not found');
     }
 
-    if (order.status !== 'DELIVERED' && order.status !== 'OUT_FOR_DELIVERY') {
+    if (order.status !== 'DELIVERED') {
       throw new BadRequestException(
-        'Invoice can only be generated for delivered orders',
+        'Bill can only be generated for delivered orders',
       );
     }
 
@@ -102,14 +102,18 @@ export class InvoicesService {
 
     const invoiceNumber = await this.generateInvoiceNumber();
 
+    const amount = order.items.reduce((sum, item) => {
+      const billedQty = item.quantity - (item.returnedQuantity || 0);
+      return sum + billedQty * item.unitPrice;
+    }, 0);
+
     const invoice = await this.prisma.invoice.create({
       data: {
         invoiceNumber,
         orderId,
-        amount: order.totalAmount,
-
+        amount,
         paidAmount: 0,
-        balanceAmount: order.totalAmount,
+        balanceAmount: amount,
       },
     });
 
@@ -143,6 +147,10 @@ export class InvoicesService {
     }
 
     const newPaidAmount = invoice.paidAmount + amount;
+
+    if (newPaidAmount > invoice.amount) {
+      throw new BadRequestException('Payment exceeds bill amount');
+    }
 
     const newBalance = invoice.amount - newPaidAmount;
 
@@ -213,9 +221,9 @@ export class InvoicesService {
 
     const message = `Hello ${customer.name},
 
-            Invoice Details
+            Bill Details
 
-            Invoice No: ${invoice.invoiceNumber}
+            Bill No: ${invoice.invoiceNumber}
 
             Amount: ₹${invoice.amount}
 
@@ -258,7 +266,7 @@ export class InvoicesService {
 
 Friendly Payment Reminder
 
-Invoice No: ${invoice.invoiceNumber}
+Bill No: ${invoice.invoiceNumber}
 
 Total Amount: ₹${invoice.amount}
 
@@ -333,13 +341,14 @@ Geetanjali Dairy`;
 
     // Invoice Details
 
-    doc.fontSize(16).text('INVOICE');
+    doc.fontSize(16).text('BILL');
 
     doc.moveDown();
 
-    doc.text(`Invoice No: ${invoice.invoiceNumber}`);
+    doc.text(`Bill No: ${invoice.invoiceNumber}`);
 
-    doc.text(`Date: ${invoice.generatedAt.toLocaleDateString('en-GB')}`);
+    doc.text(`Generated Date: ${invoice.generatedAt.toLocaleDateString('en-GB')}`);
+    doc.text(`Delivery Date: ${new Date(invoice.order.deliveryDate).toLocaleDateString('en-GB')}`);
 
     doc.moveDown();
 
@@ -369,12 +378,12 @@ Geetanjali Dairy`;
 
     const startY = doc.y;
 
-    doc.text('Product', 50, startY);
-    doc.text('Ord. Qty', 200, startY);
-    doc.text('Ret.', 270, startY);
-    doc.text('Bill', 320, startY);
-    doc.text('Rate', 380, startY);
-    doc.text('Amount', 450, startY);
+    doc.text('Product Name', 50, startY);
+    doc.text('Ordered', 200, startY);
+    doc.text('Returned', 260, startY);
+    doc.text('Final Billed', 330, startY);
+    doc.text('Rate', 410, startY);
+    doc.text('Amount', 470, startY);
 
     doc.moveDown();
 
@@ -391,12 +400,14 @@ Geetanjali Dairy`;
 
       doc.text(item.product.name, 50, y);
       doc.text(`${item.quantity}`, 200, y);
-      doc.text(`${item.returnedQuantity || 0}`, 270, y);
-      doc.text(`${item.billedQuantity || item.quantity}`, 320, y);
-      doc.text(`₹${item.unitPrice}`, 380, y);
+      doc.text(`${item.returnedQuantity || 0}`, 260, y);
+      
+      const billedQty = item.quantity - (item.returnedQuantity || 0);
+      doc.text(`${billedQty}`, 330, y);
+      doc.text(`₹${item.unitPrice}`, 410, y);
 
-      const amount = (item.billedQuantity || item.quantity) * item.unitPrice;
-      doc.text(`₹${amount.toFixed(2)}`, 450, y);
+      const amount = billedQty * item.unitPrice;
+      doc.text(`₹${amount.toFixed(2)}`, 470, y);
 
       doc.moveDown();
     }
@@ -413,7 +424,7 @@ Geetanjali Dairy`;
 
     doc.fontSize(14);
 
-    doc.text(`Total Amount: ₹${invoice.amount}`, {
+    doc.text(`Grand Total: ₹${invoice.amount}`, {
       align: 'right',
     });
 
@@ -425,7 +436,7 @@ Geetanjali Dairy`;
       align: 'right',
     });
 
-    doc.text(`Status: ${invoice.status}`, {
+    doc.text(`Bill Status: ${invoice.status}`, {
       align: 'right',
     });
 
@@ -439,7 +450,7 @@ Geetanjali Dairy`;
 
     doc.moveDown();
 
-    doc.text('This is a computer generated invoice.', {
+    doc.text('This is a computer generated bill.', {
       align: 'center',
     });
 
@@ -469,7 +480,7 @@ Geetanjali Dairy`;
 
     const message = `Hello ${customer.name},
 
-Invoice No: ${invoice.invoiceNumber}
+Bill No: ${invoice.invoiceNumber}
 
 Total Amount: ₹${invoice.amount}
 

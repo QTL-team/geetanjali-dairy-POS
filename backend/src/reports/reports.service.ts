@@ -74,7 +74,8 @@ export class ReportsService {
     const productSalesMap = new Map<string, number>();
     for (const item of orderItems) {
       const current = productSalesMap.get(item.product.name) || 0;
-      productSalesMap.set(item.product.name, current + item.quantity);
+      const billedQty = item.quantity - (item.returnedQuantity || 0);
+      productSalesMap.set(item.product.name, current + billedQty);
     }
 
     const topProducts = Array.from(productSalesMap.entries())
@@ -97,31 +98,23 @@ export class ReportsService {
             status: 'DELIVERED',
             isInvoiced: false,
           },
-          select: {
-            totalAmount: true,
-            invoice: {
-              select: {
-                amount: true,
-                paidAmount: true,
-                status: true,
-              },
-            },
+          include: {
+            items: true,
           },
         },
       },
     });
 
-    // Also get all partial/draft/sent invoices per customer, wait,
-    // invoices are not directly tied to customer, they are tied to orders!
-    // Customer -> Order -> Invoice
     const balances = customers.map((c) => {
       let pendingAmount = 0;
 
       // DELIVERED orders without invoices
       for (const order of c.orders) {
-        if (!order.invoice) {
-          pendingAmount += order.totalAmount;
-        }
+        const orderAmount = order.items.reduce((sum, item) => {
+          const billedQty = item.quantity - (item.returnedQuantity || 0);
+          return sum + billedQty * item.unitPrice;
+        }, 0);
+        pendingAmount += orderAmount;
       }
 
       return {
@@ -194,6 +187,11 @@ export class ReportsService {
         orderItem: {
           include: {
             product: true,
+            order: {
+              include: {
+                customer: true,
+              },
+            },
           },
         },
       },
@@ -202,6 +200,7 @@ export class ReportsService {
     let totalReturnedQty = 0;
     let totalReturnValue = 0;
     const productReturnsMap = new Map<string, number>();
+    const customerReturnsMap = new Map<string, number>();
 
     for (const ret of orderReturns) {
       totalReturnedQty += ret.returnedQuantity;
@@ -212,12 +211,20 @@ export class ReportsService {
         ret.orderItem.product.name,
         current + ret.returnedQuantity,
       );
+
+      const customerName = ret.orderItem.order?.customer?.name || 'Unknown';
+      const currentCust = customerReturnsMap.get(customerName) || 0;
+      customerReturnsMap.set(customerName, currentCust + ret.returnedQuantity);
     }
 
     const topReturnedProducts = Array.from(productReturnsMap.entries())
       .map(([name, totalReturned]) => ({ name, totalReturned }))
       .sort((a, b) => b.totalReturned - a.totalReturned)
       .slice(0, 10);
+
+    const customerWiseReturns = Array.from(customerReturnsMap.entries())
+      .map(([name, totalReturned]) => ({ name, totalReturned }))
+      .sort((a, b) => b.totalReturned - a.totalReturned);
 
     const products = await this.prisma.product.findMany();
     const totalReturnedStockValue = products.reduce(
@@ -229,6 +236,7 @@ export class ReportsService {
       totalReturnedQty,
       totalReturnValue,
       topReturnedProducts,
+      customerWiseReturns,
       totalReturnedStockValue,
     };
   }
